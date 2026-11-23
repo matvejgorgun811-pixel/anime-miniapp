@@ -27,6 +27,12 @@
     </div>
 
     <div class="flex items-center space-x-2">
+      <!-- Instruction Button -->
+      <button onclick="openInstructionModal()" class="flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 text-xs font-semibold hover:bg-indigo-600/30 transition shadow-sm">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        <span>Инструкция</span>
+      </button>
+
       <!-- Owner Access Button (High z-index) -->
       <button id="owner-access-btn" onclick="openAccessModal()" class="hidden z-50 flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-violet-600/30 text-violet-300 border border-violet-500/40 text-xs font-semibold hover:bg-violet-600/40 transition shadow-md">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -34,6 +40,11 @@
       </button>
     </div>
   </header>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-medium shadow-2xl transition-all duration-300 opacity-0 pointer-events-none">
+    Скопировано для отправки в чат!
+  </div>
 
   <!-- Main Content Container -->
   <main class="max-w-4xl w-full mx-auto px-4 py-5">
@@ -239,7 +250,7 @@
     </div>
   </div>
 
-  <!-- Modal 2: Dub Schedule Setup (Ongoing / First Ep support) -->
+  <!-- Modal 2: Dub Schedule Setup (With Hashtag support) -->
   <div id="modal-dub" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 hidden">
     <div class="bg-[#151a24] border border-white/[0.08] rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between">
@@ -251,9 +262,13 @@
 
       <div class="space-y-3">
         <div>
+          <label class="text-xs font-semibold text-slate-300 mb-1 block">Хештег для сдачи файлов (#hashtag)</label>
+          <input type="text" id="dub-hashtag" placeholder="#svadba_svetlyachkov" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono" />
+          <p class="text-[10px] text-slate-400 mt-0.5">Укажите хештег без пробелов, по которому бот будет принимать файлы.</p>
+        </div>
+        <div>
           <label class="text-xs font-semibold text-slate-300 mb-1 block">Стартовая серия для озвучки (start_ep)</label>
           <input type="number" id="dub-start-ep" min="1" value="1" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500" />
-          <p class="text-[10px] text-slate-400 mt-0.5">Для онгоингов можно указать текущую вышедшую серию (например, 5).</p>
         </div>
         <div>
           <label class="text-xs font-semibold text-slate-300 mb-1 block">Дата и время ближайшей серии</label>
@@ -349,6 +364,46 @@
     </div>
   </div>
 
+  <!-- Modal 6: Instruction Modal -->
+  <div id="modal-instruction" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-[#151a24] border border-white/[0.08] rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-white flex items-center space-x-2">
+          <span>📖 Инструкция для команды Anisync</span>
+        </h3>
+        <button onclick="closeModal('modal-instruction')" class="text-slate-400 hover:text-white">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="space-y-4 text-xs text-slate-300 leading-relaxed">
+        <div class="bg-[#0b0e14] p-3.5 rounded-2xl border border-white/[0.08] space-y-2">
+          <h4 class="font-bold text-indigo-300 text-sm">1. Как сдавать субтитры и дорожки в рабочую группу:</h4>
+          <ul class="list-disc list-inside space-y-1.5 text-slate-300">
+            <li>Загрузите файл в рабочую группу Telegram (Субтитры: <code class="text-indigo-400">.ass</code>, <code class="text-indigo-400">.srt</code>; Дорожки: <code class="text-indigo-400">.wav</code>, <code class="text-indigo-400">.flac</code>, <code class="text-indigo-400">.mp3</code>, <code class="text-indigo-400">.ogg</code>, <code class="text-indigo-400">.zip</code>).</li>
+            <li>В подписи к файлу обязательно укажите <strong>хештег тайтла и номер серии</strong>, например: <code class="text-indigo-400">#название 3</code>.</li>
+            <li>Бот автоматически отметит сдачу, обновит статус на сайте в реальном времени и отправит сводный отчёт руководителю в ЛС.</li>
+            <li>Когда все актеры и сабберы сдадут файлы по серии, бот автоматически тегнет звукаря в чате.</li>
+          </ul>
+        </div>
+
+        <div class="bg-[#0b0e14] p-3.5 rounded-2xl border border-white/[0.08] space-y-2">
+          <h4 class="font-bold text-indigo-300 text-sm">2. Как отслеживать график озвучки:</h4>
+          <p>Перейдите во вкладку <strong class="text-white">«Календарь»</strong> и переключитесь на режим <strong class="text-white">«График озвучки»</strong>. Вы увидите расписание всех серий на каждый день, статус сдачи дорожек и субтитров.</p>
+        </div>
+
+        <div class="bg-[#0b0e14] p-3.5 rounded-2xl border border-white/[0.08] space-y-2">
+          <h4 class="font-bold text-indigo-300 text-sm">3. Важная памятка для участников:</h4>
+          <p>Обязательно нажмите команду <code class="text-indigo-400">/start</code> в нашем Telegram-боте, чтобы бот мог присылать вам личные напоминания о выходе серий и дедлайнах.</p>
+        </div>
+      </div>
+
+      <button onclick="closeModal('modal-instruction')" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-medium text-xs transition shadow-lg shadow-indigo-600/30">
+        Понятно, закрыть
+      </button>
+    </div>
+  </div>
+
   <!-- Bottom Navigation Bar -->
   <nav class="fixed bottom-0 left-0 right-0 z-40 bg-[#151a24]/95 backdrop-blur-md border-t border-white/[0.08] px-4 py-2" style="padding-bottom: env(safe-area-inset-bottom);">
     <div class="max-w-md mx-auto flex justify-around">
@@ -391,19 +446,70 @@
     const monthsNom = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
     const monthsGen = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
 
-    // 1. STRICT LOCAL DATE HELPER (Fixes 1-day calendar date shift)
+    // STRICT LOCAL DATE HELPER
     function toLocalDateKey(dateInput) {
       if (!dateInput) return '';
       const str = String(dateInput);
       if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-        return str; // Take first 10 chars directly without Date object conversion
+        return str;
       }
       const d = new Date(dateInput);
       if (isNaN(d.getTime())) return str.slice(0, 10);
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
 
-    // SMART DATE FORMATTER (Strict prohibition of toLocaleDateString)
+    // TRANSLITERATION HELPER FOR HASHTAGS
+    function transliterate(str) {
+      const ru = {
+        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e', 'ж': 'zh',
+        'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o',
+        'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'ts',
+        'ч': 'ch', 'ш': 'sh', 'щ': 'sch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya'
+      };
+      return str.toLowerCase().split('').map(char => ru[char] || char).join('').replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '');
+    }
+
+    // TOAST NOTIFICATION HELPER
+    function showToast(message = "Скопировано для отправки в чат!") {
+      const toast = document.getElementById('toast');
+      toast.innerText = message;
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      toast.classList.add('opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 2000);
+    }
+
+    function copyToClipboard(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast(`Скопировано: ${text}`);
+        }).catch(() => {
+          fallbackCopyText(text);
+        });
+      } else {
+        fallbackCopyText(text);
+      }
+    }
+
+    function fallbackCopyText(text) {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        showToast(`Скопировано: ${text}`);
+      } catch (err) {
+        alert('Не удалось скопировать текст');
+      }
+      document.body.removeChild(textArea);
+    }
+
+    // SMART DATE FORMATTER
     function getAnimeReleaseInfo(rawDate, status) {
       if (!rawDate) {
         return { text: 'Дата выхода неизвестна', isExact: false };
@@ -440,7 +546,7 @@
       };
     }
 
-    // SHIKIMORI API FETCH LOADER (3 fallbacks without User-Agent)
+    // SHIKIMORI API FETCH LOADER
     async function fetchShiki(endpoint) {
       const urls = [
         `https://shikimori.io/api/${endpoint}`,
@@ -461,7 +567,7 @@
       throw new Error('All Shikimori API mirrors failed');
     }
 
-    // POSTER URL HELPER WITH FALLBACK (Clean gradient placeholder without "X")
+    // POSTER URL HELPER WITH FALLBACK
     function getPosterUrl(anime) {
       const img = anime?.image;
       let path = '';
@@ -497,6 +603,7 @@
       isOwner: false,
       teamAdmins: [],
       savedGroups: [],
+      dubSubmissions: [],
       activeTab: 'search',
       calendarMode: 'general',
       filterTracking: 'all',
@@ -535,6 +642,9 @@
 
         const { data: groups } = await supabaseClient.from('saved_groups').select('*');
         if (groups) state.savedGroups = groups;
+
+        const { data: subs } = await supabaseClient.from('dub_submissions').select('*');
+        if (subs) state.dubSubmissions = subs;
       } catch (e) {
         console.warn("Failed to load metadata tables:", e);
       }
@@ -595,6 +705,11 @@
       if (tabId === 'tracking') renderTracking();
       if (tabId === 'calendar') renderCalendarWidget();
       if (tabId === 'history') renderHistory();
+    }
+
+    // INSTRUCTION MODAL
+    function openInstructionModal() {
+      document.getElementById('modal-instruction').classList.remove('hidden');
     }
 
     // TAB 1: SEARCH & POPULAR FEED
@@ -797,7 +912,6 @@
       html += `<option value="manual">+ Ввести новый ID группы вручную</option>`;
       select.innerHTML = html;
 
-      // If selectedChatId is present but not in savedGroups, select manual
       if (selectedChatId && !state.savedGroups.some(g => String(g.chat_id) === String(selectedChatId))) {
         select.value = 'manual';
         document.getElementById('cfgGroupId').value = selectedChatId;
@@ -839,10 +953,8 @@
       const groupTitle = document.getElementById('cfgGroupTitle').value.trim();
       const selectVal = document.getElementById('cfgGroupSelect').value;
 
-      // If manual entry was used and new group details provided, save to saved_groups table
       if ((selectVal === 'manual' || selectVal === '') && targetGroupId) {
         const titleToSave = groupTitle || `Группа ${targetGroupId}`;
-        // Check if already in savedGroups
         if (!state.savedGroups.some(g => String(g.chat_id) === String(targetGroupId))) {
           try {
             const { data: newGroupData } = await supabaseClient.from('saved_groups').insert({
@@ -973,7 +1085,7 @@
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
                     </button>
                     <button onclick="openTrackingModalForAnimeId(${item.anime_id})" title="Настройки" class="p-1.5 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 transition">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                     </button>
                     <button onclick="promptMoveToHistory(${item.anime_id})" title="В историю" class="p-1.5 rounded-xl bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/30 transition">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
@@ -1047,7 +1159,7 @@
       }
     }
 
-    // TAB 3: CALENDAR & ONGOING DUB SCHEDULE SUPPORT
+    // TAB 3: CALENDAR & DUB SCHEDULE WITH SUBMISSIONS TRACKING
     function setCalendarMode(mode) {
       state.calendarMode = mode;
       document.getElementById('cal-mode-general').className = `flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs font-medium ${mode === 'general' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}`;
@@ -1066,7 +1178,6 @@
       renderCalendarWidget();
     }
 
-    // Helper to calculate ongoing / aired episodes scheduling weekly from start_ep
     function getExpandedDubEpisodes() {
       const expanded = [];
       state.dubScheduleList.forEach(show => {
@@ -1076,7 +1187,6 @@
           const startEp = show.start_ep || 1;
 
           for (let ep = startEp; ep <= totalEps; ep++) {
-            // ep index offset from startEp
             const weekOffset = ep - startEp;
             const epTime = firstDate.getTime() + weekOffset * 7 * 24 * 60 * 60 * 1000;
             const epDateObj = new Date(epTime);
@@ -1195,45 +1305,67 @@
           return;
         }
 
-        container.innerHTML = list.map(ep => `
-          <div class="bg-[#151a24] border border-white/[0.08] rounded-2xl p-3.5 flex space-x-3.5 shadow-md">
-            ${renderPosterHtml(ep.poster, ep.title, 'w-20 h-28')}
-            <div class="flex-1 flex flex-col justify-between min-w-0">
-              <div>
-                <div class="flex items-center justify-between">
-                  <h4 class="font-semibold text-xs text-white line-clamp-1">${ep.title}</h4>
-                  <span class="text-[10px] font-bold bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full shrink-0">Серия ${ep.episode_number} из ${ep.total_episodes}</span>
-                </div>
-                <div class="mt-1.5 flex items-center space-x-1.5 text-[11px] text-indigo-300">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  <span>Время выхода: ${ep.time_str}</span>
-                </div>
-                <div class="mt-2 text-[11px] text-slate-300 space-y-0.5">
-                  ${ep.actors ? `<p>🎭 Актеры: <span class="text-slate-100 font-medium">${ep.actors}</span></p>` : ''}
-                  ${ep.subbers ? `<p>📝 Сабберы: <span class="text-slate-100 font-medium">${ep.subbers}</span></p>` : ''}
-                  ${ep.sound_engineers ? `<p>🎛 Звукари: <span class="text-slate-100 font-medium">${ep.sound_engineers}</span></p>` : ''}
-                  <p class="text-slate-400 pt-0.5">⏰ Тег за ${ep.notify_before_min || 30} мин. до серии</p>
-                </div>
-              </div>
+        container.innerHTML = list.map(ep => {
+          // Check submissions for this anime_id and episode_number
+          const epSubs = state.dubSubmissions.filter(s => Number(s.anime_id) === Number(ep.anime_id) && Number(s.ep_num) === Number(ep.episode_number));
+          const audioSubs = epSubs.filter(s => s.file_type === 'audio');
+          const subSubs = epSubs.find(s => s.file_type === 'sub');
 
-              ${state.isAdmin ? `
-                <div class="pt-2.5 flex items-center justify-between border-t border-white/[0.06] mt-2.5">
-                  <button onclick="openDubModalForAnimeId(${ep.anime_id})" class="flex items-center space-x-1 text-[11px] text-indigo-400 hover:text-indigo-300 font-medium">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    <span>Редактировать релиз</span>
-                  </button>
-                  <button onclick="deleteDubSchedule(${ep.anime_id})" class="text-xs text-rose-400 hover:text-rose-300">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                  </button>
+          // Assuming 3 actors or channels for tracks, or count unique/total
+          const audioCount = audioSubs.length;
+          const audioStatusText = `Дороги: ${audioCount}/3 ${audioCount >= 3 ? '✅' : '⏳'}`;
+          const subStatusText = `Сабы: ${subSubs ? '✅' : '⏳'}`;
+
+          const hashtag = ep.hashtag ? `#${ep.hashtag.replace(/^#/, '')}` : `#${transliterate(ep.title)}`;
+          const copyText = `${hashtag} ${ep.episode_number}`;
+
+          return `
+            <div class="bg-[#151a24] border border-white/[0.08] rounded-2xl p-3.5 flex space-x-3.5 shadow-md">
+              ${renderPosterHtml(ep.poster, ep.title, 'w-20 h-28')}
+              <div class="flex-1 flex flex-col justify-between min-w-0">
+                <div>
+                  <div class="flex items-center justify-between gap-2">
+                    <h4 class="font-semibold text-xs text-white line-clamp-1">${ep.title}</h4>
+                    <span class="text-[10px] font-bold bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full shrink-0">Серия ${ep.episode_number} из ${ep.total_episodes}</span>
+                  </div>
+
+                  <!-- Hashtag clickable badge -->
+                  <div class="mt-1.5 flex items-center space-x-2">
+                    <button onclick="copyToClipboard('${copyText}')" class="px-2 py-0.5 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-[11px] font-mono text-indigo-300 hover:bg-indigo-500/25 transition flex items-center space-x-1" title="Нажмите, чтобы скопировать для чата">
+                      <span>📌 ${copyText}</span>
+                    </button>
+                    <span class="text-[10px] text-slate-400">${audioStatusText} • ${subStatusText}</span>
+                  </div>
+
+                  <div class="mt-1.5 flex items-center space-x-1.5 text-[11px] text-indigo-300">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span>Время выхода: ${ep.time_str}</span>
+                  </div>
+                  <div class="mt-1.5 text-[11px] text-slate-300 space-y-0.5">
+                    ${ep.actors ? `<p>🎭 Актеры: <span class="text-slate-100 font-medium">${ep.actors}</span></p>` : ''}
+                    ${ep.subbers ? `<p>📝 Сабберы: <span class="text-slate-100 font-medium">${ep.subbers}</span></p>` : ''}
+                    ${ep.sound_engineers ? `<p>🎛 Звукари: <span class="text-slate-100 font-medium">${ep.sound_engineers}</span></p>` : ''}
+                  </div>
                 </div>
-              ` : ''}
+
+                ${state.isAdmin ? `
+                  <div class="pt-2.5 flex items-center justify-between border-t border-white/[0.06] mt-2.5">
+                    <button onclick="openDubModalForAnimeId(${ep.anime_id})" class="flex items-center space-x-1 text-[11px] text-indigo-400 hover:text-indigo-300 font-medium">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      <span>Редактировать релиз</span>
+                    </button>
+                    <button onclick="deleteDubSchedule(${ep.anime_id})" class="text-xs text-rose-400 hover:text-rose-300">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </button>
+                  </div>
+                ` : ''}
+              </div>
             </div>
-          </div>
-        `).join('');
+          `;
+        }).join('');
       }
     }
 
-    // 2. SUPPORT ONGOING / START EP IN DUB SCHEDULE MODAL
     async function openDubModalForTracking(animeId) {
       const item = state.trackingList.find(t => Number(t.anime_id) === Number(animeId));
       if (!item) return;
@@ -1241,11 +1373,13 @@
       const existingDub = state.dubScheduleList.find(d => Number(d.anime_id) === Number(animeId));
       state.dubModalAnime = item;
 
-      // Start episode: if ongoing and episodes_aired > 0, suggest episodes_aired + 1, else 1
+      // Auto-fill hashtag transliterated from title if not present
+      const defaultHashtag = existingDub ? existingDub.hashtag : transliterate(item.title);
+      document.getElementById('dub-hashtag').value = defaultHashtag;
+
       const suggestedStartEp = existingDub ? (existingDub.start_ep || 1) : ((item.episodes_aired || 0) > 0 ? (item.episodes_aired + 1) : 1);
       document.getElementById('dub-start-ep').value = suggestedStartEp;
 
-      // Nearest episode date/time: next_episode_at converted to datetime-local format YYYY-MM-DDTHH:MM
       let defaultDateTime = new Date().toISOString().slice(0, 16);
       if (item.next_episode_at) {
         try {
@@ -1274,10 +1408,13 @@
       const item = state.dubModalAnime;
       if (!item) return;
 
+      const hashtagInput = document.getElementById('dub-hashtag').value.trim().replace(/^#/, '');
+
       const dubRecord = {
         anime_id: Number(item.anime_id),
         title: item.title,
         poster: item.poster,
+        hashtag: hashtagInput || transliterate(item.title),
         start_ep: parseInt(document.getElementById('dub-start-ep').value) || 1,
         first_ep_date: document.getElementById('dub-datetime').value,
         total_episodes: parseInt(document.getElementById('dub-total-eps').value) || 12,
