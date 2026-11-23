@@ -557,6 +557,16 @@
         font-weight: 600;
       }
 
+      .date-track-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+
       .detail-rows {
         display: flex;
         flex-direction: column;
@@ -1309,6 +1319,14 @@
                 </span>
                 <input id="chkTrackLicense" type="checkbox" />
               </label>
+
+              <label class="checkbox-item" for="chkDate">
+                <span class="checkbox-text">
+                  <span class="checkbox-title">Появление даты выхода 1 серии</span>
+                  <span class="checkbox-desc">Уведомление при объявлении даты старта аниме</span>
+                </span>
+                <input type="checkbox" id="chkDate" checked />
+              </label>
             </div>
           </div>
 
@@ -1387,14 +1405,14 @@
       // Замените значения на URL и anon/public ключ вашего проекта Supabase.
       // Схема таблиц:
       //   tracking: id, user_id, anime_id, anime_title, anime_name_orig,
-      //     poster_url, episodes_watched, episodes_total, next_episode_at,
-      //     licensed_by, status, track_episodes, track_status, track_license,
-      //     notify_target, updated_at
+      //     poster_url, episodes_watched, episodes_total, episodes_aired,
+      //     next_episode_at, licensed_by, status, track_episodes, track_status,
+      //     track_license, track_date, notify_target, updated_at
       //   history: id, user_id, anime_id, anime_title, poster_url,
       //     episodes_watched, episodes_total, score, note, completed_at
       // =========================================================================
-      const SUPABASE_URL = 'https://ztdddyjdzrjybwwjmksv.supabase.co';
-      const SUPABASE_KEY = 'sb_publishable_mM0RHaRg5JzcLCdBRFWTeg_rerDn153';
+      const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
+      const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
 
       const SHIKIMORI_API_BASE = 'https://shikimori.io'; // Официальный домен Shikimori API (shikimori.one/api/* делает 308 редирект на shikimori.io)
       const SHIKIMORI_MIRROR_BASE = 'https://shikimori.io';
@@ -1482,6 +1500,7 @@
         if (item.track_episodes) flags.push('серии');
         if (item.track_status) flags.push('статус');
         if (item.track_license) flags.push('лицензия');
+        if (item.track_date) flags.push('дата старта');
         return flags.length ? flags.join(', ') : 'без уведомлений';
       }
 
@@ -1829,6 +1848,7 @@
         chkTrackEpisodes: document.getElementById('chkTrackEpisodes'),
         chkTrackStatus: document.getElementById('chkTrackStatus'),
         chkTrackLicense: document.getElementById('chkTrackLicense'),
+        chkDate: document.getElementById('chkDate'),
         notifyButtons: Array.from(document.querySelectorAll('.segmented-btn[data-target]')),
         modalSaveBtn: document.getElementById('modalSaveBtn'),
         moveHistoryModal: document.getElementById('moveHistoryModal'),
@@ -2036,6 +2056,7 @@
             const percent = calculateProgressPercent(watched, total);
             const nextEp = formatNextEpisode(item.next_episode_at, item.status);
             const license = item.licensed_by ? item.licensed_by : 'Нет данных';
+            const hasDateTracking = Boolean(item.track_date);
             const isDeleting = String(state.pendingDeleteId) === String(item.anime_id);
 
             return `
@@ -2050,6 +2071,11 @@
                       <span>${escapeHtml(formatAnimeStatus(item.status))}</span>
                       <span aria-hidden="true">·</span>
                       <span>${escapeHtml(item.notify_target || 'личка')}</span>
+                      ${
+                        hasDateTracking
+                          ? `<span aria-hidden="true">·</span><span class="date-track-badge" data-date-badge="true" title="Отслеживается дата выхода 1 серии"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg><span>Дата старта</span></span>`
+                          : ''
+                      }
                     </div>
                     <div class="detail-rows">
                       <div class="detail-row">
@@ -2337,6 +2363,11 @@
         el.chkTrackEpisodes.checked = existingRecord ? Boolean(existingRecord.track_episodes) : true;
         el.chkTrackStatus.checked = existingRecord ? Boolean(existingRecord.track_status) : true;
         el.chkTrackLicense.checked = existingRecord ? Boolean(existingRecord.track_license) : false;
+        el.chkDate.checked = existingRecord
+          ? existingRecord.track_date !== undefined && existingRecord.track_date !== null
+            ? Boolean(existingRecord.track_date)
+            : true
+          : true;
         setNotifyTarget(existingRecord?.notify_target || 'личка');
 
         el.trackingModal.hidden = false;
@@ -2376,6 +2407,9 @@
 
         const animeId = Number(base.id || base.anime_id);
         const episodesTotal = Number(detail?.episodes || base.episodes || existing?.episodes_total || 0);
+        const episodesAired = Number(
+          detail?.episodes_aired ?? base.episodes_aired ?? existing?.episodes_aired ?? 0
+        );
         const payload = {
           user_id: currentUserId,
           anime_id: animeId,
@@ -2384,12 +2418,14 @@
           poster_url: existing?.poster_url || resolvePosterUrl(detail?.image || base.image),
           episodes_watched: state.modalWatched,
           episodes_total: episodesTotal,
+          episodes_aired: episodesAired,
           next_episode_at: detail?.next_episode_at ?? existing?.next_episode_at ?? null,
           licensed_by: extractLicenseText(detail) || existing?.licensed_by || '',
           status: detail?.status || base.status || existing?.status || 'ongoing',
           track_episodes: el.chkTrackEpisodes.checked,
           track_status: el.chkTrackStatus.checked,
           track_license: el.chkTrackLicense.checked,
+          track_date: Boolean(el.chkDate.checked),
           notify_target: state.modalNotifyTarget,
           updated_at: new Date().toISOString(),
         };
