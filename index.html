@@ -173,7 +173,6 @@
           <p id="team-count-label" class="text-xs text-slate-400">Участники озвучки и роли (0)</p>
         </div>
 
-        <!-- Team Role Filters -->
         <div class="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar" id="team-filters">
           <button onclick="setTeamFilter('all')" data-team-filter="all" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-indigo-600 text-white shadow-md whitespace-nowrap">Все</button>
           <button onclick="setTeamFilter('actor')" data-team-filter="actor" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-[#151a24] text-slate-400 hover:bg-slate-800 border border-white/[0.08] whitespace-nowrap">🎭 Актеры</button>
@@ -182,7 +181,6 @@
         </div>
       </div>
 
-      <!-- Add Team Member Form (Admin only) -->
       <div id="team-add-form-container" class="bg-[#151a24] border border-white/[0.08] rounded-2xl p-4 shadow-lg space-y-3.5 hidden">
         <h3 class="text-sm font-bold text-white">Добавить участника в команду</h3>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -208,8 +206,31 @@
         </button>
       </div>
 
-      <!-- Team Members List -->
       <div id="team-list-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <!-- Rendered via JS -->
+      </div>
+    </div>
+
+    <!-- TAB 6: REPORTS -->
+    <div id="tab-reports" class="space-y-5 hidden">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-bold text-white">📊 Отчёты по сдачам</h2>
+          <p class="text-xs text-slate-400">Проверка сданных дорожек и субтитров по сериям</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <select id="report-select-anime" onchange="onReportAnimeChange()" class="bg-[#151a24] border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+            <option value="">-- Выберите релиз --</option>
+          </select>
+          <select id="report-select-ep" onchange="renderReportsTabContent()" class="bg-[#151a24] border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 w-24">
+            <option value="1">Серия 1</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Reports Container Blocks -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="reports-blocks-container">
         <!-- Rendered via JS -->
       </div>
     </div>
@@ -270,7 +291,7 @@
         </div>
       </div>
 
-      <!-- Group Selection Section (Dynamic) -->
+      <!-- Group Selection Section -->
       <div id="group-selection-container" class="space-y-3 pt-1 hidden">
         <div>
           <label class="text-xs font-semibold text-slate-300 mb-1 block">Выберите или добавьте группу</label>
@@ -298,7 +319,7 @@
     </div>
   </div>
 
-  <!-- Modal 2: Dub Schedule Setup (With Team Checkboxes) -->
+  <!-- Modal 2: Dub Schedule Setup -->
   <div id="modal-dub" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 hidden">
     <div class="bg-[#151a24] border border-white/[0.08] rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between">
@@ -328,25 +349,18 @@
           <input type="datetime-local" id="dub-datetime" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500" />
         </div>
 
-        <!-- Team Checkbox Selection Blocks -->
         <div class="space-y-3 bg-[#0b0e14] p-4 rounded-2xl border border-white/[0.08]">
           <div>
             <label class="text-xs font-semibold text-indigo-300 mb-1.5 block">🎭 Выберите актеров</label>
-            <div id="dub-actors-checkboxes" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1">
-              <!-- Rendered via JS -->
-            </div>
+            <div id="dub-actors-checkboxes" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1"></div>
           </div>
           <div>
             <label class="text-xs font-semibold text-indigo-300 mb-1.5 block">📝 Выберите сабберов</label>
-            <div id="dub-subbers-checkboxes" class="flex flex-wrap gap-2 max-h-24 overflow-y-auto p-1">
-              <!-- Rendered via JS -->
-            </div>
+            <div id="dub-subbers-checkboxes" class="flex flex-wrap gap-2 max-h-24 overflow-y-auto p-1"></div>
           </div>
           <div>
             <label class="text-xs font-semibold text-indigo-300 mb-1.5 block">🎛 Выберите звукарей</label>
-            <div id="dub-sound-checkboxes" class="flex flex-wrap gap-2 max-h-24 overflow-y-auto p-1">
-              <!-- Rendered via JS -->
-            </div>
+            <div id="dub-sound-checkboxes" class="flex flex-wrap gap-2 max-h-24 overflow-y-auto p-1"></div>
           </div>
         </div>
 
@@ -390,23 +404,27 @@
     </div>
   </div>
 
-  <!-- Modal 4: Admins Management & Saved Groups (Owner Only) -->
+  <!-- Modal 4: Admins Management, Report Access & Forum Topics (Owner Only) -->
   <div id="modal-admins" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-    <div class="bg-[#151a24] border border-white/[0.08] rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+    <div class="bg-[#151a24] border border-white/[0.08] rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between">
-        <h3 class="text-lg font-bold text-white">👥 Управление доступами и чатами</h3>
+        <h3 class="text-lg font-bold text-white">👥 Доступы, отчёты и темы форума</h3>
         <button onclick="closeModal('modal-admins')" class="text-slate-400 hover:text-white">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
 
-      <!-- Block 1: Admins -->
+      <!-- Block 1: Admins & Report Access -->
       <div class="space-y-3">
-        <h4 class="text-xs font-bold text-indigo-300 uppercase tracking-wider">Администраторы бота</h4>
-        <div class="flex gap-2">
+        <h4 class="text-xs font-bold text-indigo-300 uppercase tracking-wider">Помощники и доступ к отчётам (team_admins)</h4>
+        <div class="flex flex-col sm:flex-row gap-2">
           <input type="text" id="newAdminInput" placeholder="Введите @username или числовой ID" class="flex-1 bg-[#0b0e14] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500" />
+          <label class="flex items-center space-x-2 text-xs text-slate-300 px-2 cursor-pointer">
+            <input type="checkbox" id="newAdminCanReport" checked class="w-4 h-4 rounded text-indigo-600 bg-[#0b0e14] border-white/20" />
+            <span>📊 Отчёты</span>
+          </label>
           <button onclick="addNewAdmin()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl font-medium text-xs transition shadow-md whitespace-nowrap">
-            Выдать права
+            Добавить
           </button>
         </div>
         <div id="admins-list-container" class="space-y-2 max-h-40 overflow-y-auto">
@@ -416,10 +434,20 @@
 
       <hr class="border-white/[0.08]" />
 
-      <!-- Block 2: Saved Groups & Work Chat toggle -->
+      <!-- Block 2: Forum Topics Binding -->
       <div class="space-y-3">
-        <h4 class="text-xs font-bold text-indigo-300 uppercase tracking-wider">💬 Группы, в которых состоит бот</h4>
-        <div id="saved-groups-admin-list" class="space-y-2.5 max-h-50 overflow-y-auto">
+        <h4 class="text-xs font-bold text-indigo-300 uppercase tracking-wider">💬 Привязка тем форума к аниме (forum_topics)</h4>
+        <div id="forum-topics-list-container" class="space-y-2.5 max-h-50 overflow-y-auto">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+
+      <hr class="border-white/[0.08]" />
+
+      <!-- Block 3: Saved Groups & Work Chat toggle -->
+      <div class="space-y-3">
+        <h4 class="text-xs font-bold text-indigo-300 uppercase tracking-wider">💬 Группы бота</h4>
+        <div id="saved-groups-admin-list" class="space-y-2.5 max-h-40 overflow-y-auto">
           <!-- Rendered via JS -->
         </div>
       </div>
@@ -435,7 +463,7 @@
     </div>
   </div>
 
-  <!-- Modal 6: Instruction Modal (Updated without hashtags) -->
+  <!-- Modal 6: Instruction Modal (Updated with #ботзапиши) -->
   <div id="modal-instruction" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 hidden">
     <div class="bg-[#151a24] border border-white/[0.08] rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between">
@@ -449,20 +477,14 @@
 
       <div class="space-y-4 text-xs text-slate-300 leading-relaxed">
         <div class="bg-[#0b0e14] p-3.5 rounded-2xl border border-white/[0.08] space-y-2">
-          <h4 class="font-bold text-indigo-300 text-sm">🎙 Для актеров озвучки:</h4>
-          <p>Скиньте аудиофайл (<code class="text-indigo-400">.wav</code>, <code class="text-indigo-400">.flac</code>, <code class="text-indigo-400">.mp3</code>, <code class="text-indigo-400">.ogg</code>, <code class="text-indigo-400">.zip</code>) в рабочий чат. Имя файла должно содержать <strong class="text-white">номер серии</strong>, <strong class="text-white">ваш ник</strong> из вкладки «Команда» и <strong class="text-white">название тайтла</strong>.</p>
-          <p class="text-indigo-300 font-mono text-[11px] bg-indigo-950/40 p-2 rounded-xl">Пример: 03 Вася Свадьба светлячков.wav</p>
+          <h4 class="font-bold text-indigo-300 text-sm">🎙 Сдача дорожек и субтитров:</h4>
+          <p>Отправляйте дорожки и субтитры в <strong class="text-white">тему своего тайтла</strong> в рабочем чате с подписью <code class="text-indigo-400">#ботзапиши</code>.</p>
+          <p class="text-indigo-300 font-mono text-[11px] bg-indigo-950/40 p-2 rounded-xl">Пример: файл 08 Светлячки - Алена.flac + подпись #ботзапиши</p>
         </div>
 
         <div class="bg-[#0b0e14] p-3.5 rounded-2xl border border-white/[0.08] space-y-2">
-          <h4 class="font-bold text-indigo-300 text-sm">📝 Для сабберов:</h4>
-          <p>Скиньте файл субтитров (<code class="text-indigo-400">.ass</code>, <code class="text-indigo-400">.srt</code>) в рабочий чат. Имя файла должно содержать <strong class="text-white">номер серии</strong> и <strong class="text-white">название тайтла</strong>.</p>
-          <p class="text-indigo-300 font-mono text-[11px] bg-indigo-950/40 p-2 rounded-xl">Пример: 03 Свадьба светлячков.ass</p>
-        </div>
-
-        <div class="bg-[#0b0e14] p-3.5 rounded-2xl border border-white/[0.08] space-y-2">
-          <h4 class="font-bold text-indigo-300 text-sm">🤖 Автоматическая проверка:</h4>
-          <p>Подписи к файлам и хештеги писать НЕ нужно — бот сам распознает имя файла, отметит сдачу, пришлет отчёт руководителю в ЛС и тегнет звукаря, когда все файлы по серии будут готовы.</p>
+          <h4 class="font-bold text-indigo-300 text-sm">📊 Получение отчётов в ЛС:</h4>
+          <p>Все, кому выдан доступ к отчётам, должны один раз нажать <code class="text-indigo-400">/start</code> в личных сообщениях с ботом, чтобы бот мог автоматически присылать им свежие отчёты в ЛС после каждой сдачи.</p>
         </div>
       </div>
 
@@ -472,28 +494,65 @@
     </div>
   </div>
 
-  <!-- Bottom Navigation Bar (5 Tabs) -->
+  <!-- Modal 7: Manual Submission Modal -->
+  <div id="modal-manual-sub" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-[#151a24] border border-white/[0.08] rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold text-white">Отметить сдачу вручную</h3>
+        <button onclick="closeModal('modal-manual-sub')" class="text-slate-400 hover:text-white">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs font-semibold text-slate-300 mb-1 block">Тип материала</label>
+          <select id="manual-sub-type" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            <option value="actor">🎭 Дорожка актера</option>
+            <option value="subs">📝 Субтитры</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-300 mb-1 block">Участник (Ник / Username)</label>
+          <select id="manual-sub-user" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            <!-- Populated via JS -->
+          </select>
+        </div>
+      </div>
+
+      <div class="flex space-x-3 pt-2">
+        <button onclick="closeModal('modal-manual-sub')" class="flex-1 bg-[#0b0e14] hover:bg-slate-850 text-slate-300 py-3 rounded-xl font-medium text-xs transition border border-white/[0.08]">Отмена</button>
+        <button onclick="saveManualSubmission()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-medium text-xs transition shadow-lg shadow-indigo-600/30">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation Bar (6 Tabs) -->
   <nav class="fixed bottom-0 left-0 right-0 z-40 bg-[#151a24]/95 backdrop-blur-md border-t border-white/[0.08] px-4 py-2" style="padding-bottom: env(safe-area-inset-bottom);">
     <div class="max-w-md mx-auto flex justify-around">
-      <button onclick="switchTab('search')" id="nav-search" class="flex flex-col items-center py-1.5 px-3 rounded-2xl transition text-indigo-400 bg-indigo-600/10">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <span class="text-[11px] font-medium mt-1">Поиск</span>
+      <button onclick="switchTab('search')" id="nav-search" class="flex flex-col items-center py-1.5 px-2 rounded-2xl transition text-indigo-400 bg-indigo-600/10">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span class="text-[10px] font-medium mt-1">Поиск</span>
       </button>
-      <button onclick="switchTab('tracking')" id="nav-tracking" class="flex flex-col items-center py-1.5 px-3 rounded-2xl transition text-slate-400 hover:text-slate-200">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
-        <span class="text-[11px] font-medium mt-1">Отслеживаю</span>
+      <button onclick="switchTab('tracking')" id="nav-tracking" class="flex flex-col items-center py-1.5 px-2 rounded-2xl transition text-slate-400 hover:text-slate-200">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+        <span class="text-[10px] font-medium mt-1">Отслеживаю</span>
       </button>
-      <button onclick="switchTab('calendar')" id="nav-calendar" class="flex flex-col items-center py-1.5 px-3 rounded-2xl transition text-slate-400 hover:text-slate-200">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        <span class="text-[11px] font-medium mt-1">Календарь</span>
+      <button onclick="switchTab('calendar')" id="nav-calendar" class="flex flex-col items-center py-1.5 px-2 rounded-2xl transition text-slate-400 hover:text-slate-200">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span class="text-[10px] font-medium mt-1">Календарь</span>
       </button>
-      <button onclick="switchTab('history')" id="nav-history" class="flex flex-col items-center py-1.5 px-3 rounded-2xl transition text-slate-400 hover:text-slate-200">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
-        <span class="text-[11px] font-medium mt-1">История</span>
+      <button onclick="switchTab('history')" id="nav-history" class="flex flex-col items-center py-1.5 px-2 rounded-2xl transition text-slate-400 hover:text-slate-200">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+        <span class="text-[10px] font-medium mt-1">История</span>
       </button>
-      <button onclick="switchTab('team')" id="nav-team" class="flex flex-col items-center py-1.5 px-3 rounded-2xl transition text-slate-400 hover:text-slate-200">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <span class="text-[11px] font-medium mt-1">Команда</span>
+      <button onclick="switchTab('team')" id="nav-team" class="flex flex-col items-center py-1.5 px-2 rounded-2xl transition text-slate-400 hover:text-slate-200">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span class="text-[10px] font-medium mt-1">Команда</span>
+      </button>
+      <button onclick="switchTab('reports')" id="nav-reports" class="flex flex-col items-center py-1.5 px-2 rounded-2xl transition text-slate-400 hover:text-slate-200">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span class="text-[10px] font-medium mt-1">Отчёты</span>
       </button>
     </div>
   </nav>
@@ -530,7 +589,6 @@
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
 
-    // TRANSLITERATION HELPER FOR HASHTAGS
     function transliterate(str) {
       const ru = {
         'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e', 'ж': 'zh',
@@ -541,7 +599,6 @@
       return str.toLowerCase().split('').map(char => ru[char] || char).join('').replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '');
     }
 
-    // TOAST NOTIFICATION HELPER
     function showToast(message = "Скопировано!") {
       const toast = document.getElementById('toast');
       toast.innerText = message;
@@ -581,7 +638,6 @@
       document.body.removeChild(textArea);
     }
 
-    // SMART DATE FORMATTER
     function getAnimeReleaseInfo(rawDate, status) {
       if (!rawDate) {
         return { text: 'Дата выхода неизвестна', isExact: false };
@@ -618,7 +674,6 @@
       };
     }
 
-    // SHIKIMORI API FETCH LOADER
     async function fetchShiki(endpoint) {
       const urls = [
         `https://shikimori.io/api/${endpoint}`,
@@ -639,7 +694,6 @@
       throw new Error('All Shikimori API mirrors failed');
     }
 
-    // POSTER URL HELPER WITH FALLBACK
     function getPosterUrl(anime) {
       const img = anime?.image;
       let path = '';
@@ -673,8 +727,10 @@
       tgUser: null,
       isAdmin: false,
       isOwner: false,
+      canViewReports: false,
       teamAdmins: [],
       savedGroups: [],
+      forumTopics: [],
       teamMembers: [],
       dubSubmissions: [],
       activeTab: 'search',
@@ -717,6 +773,9 @@
         const { data: groups } = await supabaseClient.from('saved_groups').select('*');
         if (groups) state.savedGroups = groups;
 
+        const { data: topics } = await supabaseClient.from('forum_topics').select('*');
+        if (topics) state.forumTopics = topics;
+
         const { data: members } = await supabaseClient.from('team_members').select('*');
         if (members) state.teamMembers = members;
 
@@ -727,12 +786,17 @@
       }
 
       state.isOwner = (currentUserId === OWNER_ID);
-      state.isAdmin = state.isOwner || state.teamAdmins.some(a => 
+      
+      const adminRecord = state.teamAdmins.find(a => 
         (a.tg_id && Number(a.tg_id) === currentUserId) || 
         (a.username && currentUsername && a.username.toLowerCase() === currentUsername)
       );
 
+      state.isAdmin = state.isOwner || Boolean(adminRecord);
+      state.canViewReports = state.isOwner || (adminRecord ? (adminRecord.can_view_reports !== false) : false);
+
       updateRoleHeaderUI();
+      updateReportsTabVisibility();
 
       try {
         const { data: t } = await supabaseClient.from('tracking').select('*').order('id', { ascending: false });
@@ -764,25 +828,52 @@
       }
     }
 
-    // SWITCH TABS (5 Tabs including Team)
+    function updateReportsTabVisibility() {
+      const reportsNavBtn = document.getElementById('nav-reports');
+      if (state.canViewReports) {
+        reportsNavBtn.classList.remove('hidden');
+      } else {
+        reportsNavBtn.classList.add('hidden');
+        if (state.activeTab === 'reports') {
+          switchTab('search');
+        }
+      }
+    }
+
+    // SWITCH TABS (6 Tabs including Reports)
     function switchTab(tabId) {
+      if (tabId === 'reports' && !state.canViewReports) {
+        alert('У вас нет доступа к отчётам.');
+        return;
+      }
+
       state.activeTab = tabId;
-      ['search', 'tracking', 'calendar', 'history', 'team'].forEach(t => {
-        document.getElementById(`tab-${t}`).classList.add('hidden');
+      ['search', 'tracking', 'calendar', 'history', 'team', 'reports'].forEach(t => {
+        const el = document.getElementById(`tab-${t}`);
+        if (el) el.classList.add('hidden');
         const navBtn = document.getElementById(`nav-${t}`);
-        navBtn.className = "flex flex-col items-center py-1.5 px-3 rounded-2xl transition text-slate-400 hover:text-slate-200";
-        navBtn.querySelector('svg').style.strokeWidth = "1.75";
+        if (navBtn) {
+          navBtn.className = "flex flex-col items-center py-1.5 px-2 rounded-2xl transition text-slate-400 hover:text-slate-200";
+          const svg = navBtn.querySelector('svg');
+          if (svg) svg.style.strokeWidth = "1.75";
+        }
       });
 
-      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+      const activeTabEl = document.getElementById(`tab-${tabId}`);
+      if (activeTabEl) activeTabEl.classList.remove('hidden');
+
       const activeNav = document.getElementById(`nav-${tabId}`);
-      activeNav.className = "flex flex-col items-center py-1.5 px-3 rounded-2xl transition text-indigo-400 bg-indigo-600/10";
-      activeNav.querySelector('svg').style.strokeWidth = "2.5";
+      if (activeNav) {
+        activeNav.className = "flex flex-col items-center py-1.5 px-2 rounded-2xl transition text-indigo-400 bg-indigo-600/10";
+        const svg = activeNav.querySelector('svg');
+        if (svg) svg.style.strokeWidth = "2.5";
+      }
 
       if (tabId === 'tracking') renderTracking();
       if (tabId === 'calendar') renderCalendarWidget();
       if (tabId === 'history') renderHistory();
       if (tabId === 'team') renderTeam();
+      if (tabId === 'reports') initReportsTab();
     }
 
     // INSTRUCTION MODAL
@@ -1238,7 +1329,7 @@
       }
     }
 
-    // TAB 3: CALENDAR & DUB SCHEDULE WITH SUBMISSIONS & TEAM CHECKBOXES
+    // TAB 3: CALENDAR & DUB SCHEDULE
     function setCalendarMode(mode) {
       state.calendarMode = mode;
       document.getElementById('cal-mode-general').className = `flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs font-medium ${mode === 'general' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}`;
@@ -1388,7 +1479,6 @@
           const epSubs = state.dubSubmissions.filter(s => Number(s.anime_id) === Number(ep.anime_id) && Number(s.ep_num) === Number(ep.episode_number));
           const subSubmitted = epSubs.some(s => s.file_type === 'subs');
 
-          // Parse assigned actors
           const assignedActors = (ep.actors || '').split(/[\s,@]+/).filter(Boolean);
           const actorProgressHtml = assignedActors.map(act => {
             const memberObj = state.teamMembers.find(m => m.username && m.username.toLowerCase() === act.toLowerCase());
@@ -1409,7 +1499,6 @@
                     <span class="text-[10px] font-bold bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full shrink-0">Серия ${ep.episode_number} из ${ep.total_episodes}</span>
                   </div>
 
-                  <!-- Submission Progress Display -->
                   <div class="mt-2 space-y-1 bg-[#0b0e14] p-2.5 rounded-xl border border-white/[0.08] text-[11px]">
                     <div class="flex items-center justify-between">
                       <span class="text-slate-300 font-medium">🎭 Актеры:</span>
@@ -1476,7 +1565,6 @@
       document.getElementById('dub-total-eps').value = existingDub ? existingDub.total_episodes : (item.episodes || 12);
       document.getElementById('dub-notify-min').value = existingDub ? existingDub.notify_before_min : 30;
 
-      // Populate Team Checkboxes
       const selectedActors = existingDub ? (existingDub.actors || '').split(/[\s,@]+/).filter(Boolean) : [];
       const selectedSubbers = existingDub ? (existingDub.subbers || '').split(/[\s,@]+/).filter(Boolean) : [];
       const selectedSound = existingDub ? (existingDub.sound_engineers || '').split(/[\s,@]+/).filter(Boolean) : [];
@@ -1731,10 +1819,203 @@
       } catch (e) {}
     }
 
-    // 👥 ACCESS MODAL & SAVED GROUPS (WithOwner & Work chat toggle)
+    // TAB 6: REPORTS
+    let currentReportAnimeId = null;
+    let currentReportEpNum = 1;
+
+    function initReportsTab() {
+      const selectAnime = document.getElementById('report-select-anime');
+      if (state.dubScheduleList.length === 0) {
+        selectAnime.innerHTML = `<option value="">-- В графике озвучки нет релизов --</option>`;
+        document.getElementById('reports-blocks-container').innerHTML = `<div class="text-center py-16 text-slate-500 col-span-full text-xs">Добавьте тайтлы во вкладку «Календарь -> График озвучки», чтобы смотреть отчёты.</div>`;
+        return;
+      }
+
+      selectAnime.innerHTML = state.dubScheduleList.map(s => `<option value="${s.anime_id}">${s.title}</option>`).join('');
+      if (!currentReportAnimeId && state.dubScheduleList.length > 0) {
+        currentReportAnimeId = state.dubScheduleList[0].anime_id;
+      }
+      selectAnime.value = currentReportAnimeId;
+      onReportAnimeChange();
+    }
+
+    function onReportAnimeChange() {
+      const selectAnime = document.getElementById('report-select-anime');
+      currentReportAnimeId = Number(selectAnime.value);
+      const show = state.dubScheduleList.find(s => Number(s.anime_id) === currentReportAnimeId);
+      if (!show) return;
+
+      const startEp = show.start_ep || 1;
+      const totalEps = show.total_episodes || 12;
+
+      const selectEp = document.getElementById('report-select-ep');
+      let epHtml = '';
+      for (let ep = startEp; ep <= totalEps; ep++) {
+        epHtml += `<option value="${ep}" ${ep === currentReportEpNum ? 'selected' : ''}>Серия ${ep}</option>`;
+      }
+      selectEp.innerHTML = epHtml;
+      currentReportEpNum = Number(selectEp.value);
+      renderReportsTabContent();
+    }
+
+    function renderReportsTabContent() {
+      const selectEp = document.getElementById('report-select-ep');
+      currentReportEpNum = Number(selectEp.value);
+      const show = state.dubScheduleList.find(s => Number(s.anime_id) === currentReportAnimeId);
+      const container = document.getElementById('reports-blocks-container');
+
+      if (!show) {
+        container.innerHTML = '';
+        return;
+      }
+
+      const epSubs = state.dubSubmissions.filter(s => Number(s.anime_id) === currentReportAnimeId && Number(s.ep_num) === currentReportEpNum);
+      const subRecord = epSubs.find(s => s.file_type === 'subs');
+      const actorSubs = epSubs.filter(s => s.file_type === 'actor');
+
+      // Assigned actors & subbers
+      const assignedActors = (show.actors || '').split(/[\s,@]+/).filter(Boolean);
+      const assignedSubbers = (show.subbers || '').split(/[\s,@]+/).filter(Boolean);
+
+      // Already submitted block
+      let submittedHtml = '';
+      if (subRecord) {
+        submittedHtml += `
+          <div class="flex items-center justify-between bg-[#0b0e14] px-3.5 py-2.5 rounded-xl border border-white/[0.08]">
+            <div class="text-xs text-slate-200">📝 Субтитры (@${subRecord.username})</div>
+            <div class="flex items-center space-x-2">
+              <span class="text-[10px] text-emerald-400 font-medium">✅ Сдано</span>
+              ${state.isAdmin ? `<button onclick="deleteSubmission('${subRecord.id}')" class="text-rose-400 hover:text-rose-300 p-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}
+            </div>
+          </div>
+        `;
+      }
+
+      actorSubs.forEach(sub => {
+        const member = state.teamMembers.find(m => m.username && m.username.toLowerCase() === String(sub.username).toLowerCase());
+        const nick = member ? member.nickname : sub.nickname;
+        submittedHtml += `
+          <div class="flex items-center justify-between bg-[#0b0e14] px-3.5 py-2.5 rounded-xl border border-white/[0.08]">
+            <div class="text-xs text-slate-200">🎭 ${nick} (@${sub.username}) <span class="text-[10px] text-slate-400 font-mono">(${sub.file_name})</span></div>
+            <div class="flex items-center space-x-2">
+              <span class="text-[10px] text-emerald-400 font-medium">✅ Сдал дорожку</span>
+              ${state.isAdmin ? `<button onclick="deleteSubmission('${sub.id}')" class="text-rose-400 hover:text-rose-300 p-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}
+            </div>
+          </div>
+        `;
+      });
+
+      if (!subRecord && actorSubs.length === 0) {
+        submittedHtml = `<div class="text-slate-500 text-xs py-4 text-center">На эту серию пока ничего не сдано</div>`;
+      }
+
+      // Still must submit block
+      let pendingHtml = '';
+      let pendingCount = 0;
+
+      if (!subRecord) {
+        pendingCount++;
+        pendingHtml += `
+          <div class="flex items-center justify-between bg-[#0b0e14] px-3.5 py-2.5 rounded-xl border border-white/[0.08]">
+            <div class="text-xs text-slate-300">📝 Субтитры (Ожидаются от сабберов)</div>
+            <span class="text-[10px] text-amber-400 font-medium">⏳ Ожидание</span>
+          </div>
+        `;
+      }
+
+      assignedActors.forEach(act => {
+        const cleanAct = act.replace(/^@/, '').toLowerCase();
+        const member = state.teamMembers.find(m => m.username && m.username.toLowerCase() === cleanAct);
+        const nick = member ? member.nickname : cleanAct;
+        const hasSubmitted = actorSubs.some(s => String(s.username).toLowerCase() === cleanAct || (member && String(s.username).toLowerCase() === member.nickname.toLowerCase()));
+
+        if (!hasSubmitted) {
+          pendingCount++;
+          pendingHtml += `
+            <div class="flex items-center justify-between bg-[#0b0e14] px-3.5 py-2.5 rounded-xl border border-white/[0.08]">
+              <div class="text-xs text-slate-300">🎭 ${nick} (@${cleanAct})</div>
+              <span class="text-[10px] text-amber-400 font-medium">⏳ Не сдал</span>
+            </div>
+          `;
+        }
+      });
+
+      if (pendingCount === 0) {
+        pendingHtml = `<div class="text-emerald-400 text-xs py-4 text-center font-medium">🎉 Все материалы на эту серию полностью сданы!</div>`;
+      }
+
+      container.innerHTML = `
+        <div class="bg-[#151a24] border border-white/[0.08] rounded-2xl p-4 shadow-lg space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-emerald-400">✅ Уже сдали (${epSubs.length})</h3>
+            ${state.isAdmin ? `<button onclick="openManualSubModal()" class="text-[11px] bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-lg transition">+ Отметить вручную</button>` : ''}
+          </div>
+          <div class="space-y-2 max-h-72 overflow-y-auto">
+            ${submittedHtml}
+          </div>
+        </div>
+
+        <div class="bg-[#151a24] border border-white/[0.08] rounded-2xl p-4 shadow-lg space-y-3">
+          <h3 class="text-sm font-bold text-amber-400">⏳ Ещё должны сдать (${pendingCount})</h3>
+          <div class="space-y-2 max-h-72 overflow-y-auto">
+            ${pendingHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    function openManualSubModal() {
+      const selectUser = document.getElementById('manual-sub-user');
+      selectUser.innerHTML = state.teamMembers.map(m => `<option value="${m.username || m.nickname}">${m.nickname} (@${m.username || 'nouser'}) [${m.role}]</option>`).join('');
+      document.getElementById('modal-manual-sub').classList.remove('hidden');
+    }
+
+    async function saveManualSubmission() {
+      const fileType = document.getElementById('manual-sub-type').value;
+      const userToken = document.getElementById('manual-sub-user').value;
+      const member = state.teamMembers.find(m => m.username === userToken || m.nickname === userToken);
+      const username = member ? (member.username || member.nickname).replace(/^@/, '').toLowerCase() : userToken.replace(/^@/, '').toLowerCase();
+      const nickname = member ? member.nickname : username;
+
+      const payload = {
+        anime_id: Number(currentReportAnimeId),
+        ep_num: Number(currentReportEpNum),
+        file_type: fileType,
+        nickname: nickname,
+        username: username,
+        file_name: 'manual_admin_submission'
+      };
+
+      try {
+        const { error } = await supabaseClient.from('dub_submissions').insert(payload);
+        if (error) throw error;
+
+        const { data: subs } = await supabaseClient.from('dub_submissions').select('*');
+        if (subs) state.dubSubmissions = subs;
+
+        closeModal('modal-manual-sub');
+        renderReportsTabContent();
+        showToast('Сдача отмечена вручную!');
+      } catch (err) {
+        alert('Ошибка при сохранении сдачи: ' + err.message);
+      }
+    }
+
+    async function deleteSubmission(subId) {
+      if (!confirm('Удалить эту отметку о сдаче?')) return;
+      state.dubSubmissions = state.dubSubmissions.filter(s => String(s.id) !== String(subId));
+      renderReportsTabContent();
+
+      try {
+        await supabaseClient.from('dub_submissions').delete().match({ id: subId });
+      } catch (e) {}
+    }
+
+    // 👥 ACCESS MODAL: ADMINS, REPORT ACCESS & FORUM TOPICS (OWNER ONLY)
     function openAccessModal() {
       if (!state.isOwner) return;
       renderAdminsList();
+      renderForumTopicsList();
       renderSavedGroupsAdminList();
       document.getElementById('modal-admins').classList.remove('hidden');
     }
@@ -1748,20 +2029,83 @@
 
       container.innerHTML = state.teamAdmins.map(admin => `
         <div class="flex items-center justify-between bg-[#0b0e14] px-3.5 py-2.5 rounded-xl border border-white/[0.08]">
-          <div class="text-xs text-slate-200">
-            ${admin.username ? `@${admin.username}` : `ID: ${admin.tg_id}`}
+          <div class="flex items-center space-x-2 text-xs text-slate-200">
+            <span>${admin.username ? `@${admin.username}` : `ID: ${admin.tg_id}`}</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full ${admin.can_view_reports !== false ? 'bg-indigo-500/20 text-indigo-300' : 'bg-slate-800 text-slate-400'}">📊 Отчёты</span>
           </div>
-          <button onclick="removeAdmin('${admin.id}')" class="text-rose-400 hover:text-rose-300 p-1">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-          </button>
+          <div class="flex items-center space-x-2">
+            <button onclick="toggleAdminReportAccess('${admin.id}', ${admin.can_view_reports === false})" class="text-[10px] bg-slate-800 text-slate-300 px-2.5 py-1 rounded-lg hover:bg-slate-700">
+              ${admin.can_view_reports !== false ? 'Забрать отчёты' : 'Дать отчёты'}
+            </button>
+            <button onclick="removeAdmin('${admin.id}')" class="text-rose-400 hover:text-rose-300 p-1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+          </div>
         </div>
       `).join('');
+    }
+
+    async function toggleAdminReportAccess(adminId, canView) {
+      state.teamAdmins = state.teamAdmins.map(a => String(a.id) === String(adminId) ? { ...a, can_view_reports: canView } : a);
+      renderAdminsList();
+
+      try {
+        await supabaseClient.from('team_admins').update({ can_view_reports: canView }).match({ id: adminId });
+      } catch (e) {}
+    }
+
+    function renderForumTopicsList() {
+      const container = document.getElementById('forum-topics-list-container');
+      if (state.forumTopics.length === 0) {
+        container.innerHTML = `<div class="text-center py-6 text-slate-500 text-xs">В базе пока нет тем форума (forum_topics)</div>`;
+        return;
+      }
+
+      container.innerHTML = state.forumTopics.map(topic => {
+        let animeOptions = `<option value="">-- Привязать тему к аниме --</option>`;
+        state.dubScheduleList.forEach(show => {
+          const isSel = Number(topic.bound_anime_id) === Number(show.anime_id);
+          animeOptions += `<option value="${show.anime_id}" ${isSel ? 'selected' : ''}>${show.title}</option>`;
+        });
+
+        return `
+          <div class="bg-[#0b0e14] p-3.5 rounded-2xl border border-white/[0.08] space-y-2">
+            <div class="flex items-center justify-between">
+              <h5 class="font-bold text-xs text-white">💬 Тема: "${topic.topic_title}"</h5>
+              <span class="text-[10px] text-slate-400 font-mono">Thread ID: ${topic.thread_id}</span>
+            </div>
+            <div>
+              <select onchange="bindTopicToAnime('${topic.id}', this.value)" class="w-full bg-[#151a24] border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-indigo-300 focus:outline-none focus:border-indigo-500">
+                ${animeOptions}
+              </select>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function bindTopicToAnime(topicId, animeIdStr) {
+      const animeId = animeIdStr ? Number(animeIdStr) : null;
+      const show = animeId ? state.dubScheduleList.find(s => Number(s.anime_id) === animeId) : null;
+      const boundTitle = show ? show.title : null;
+
+      state.forumTopics = state.forumTopics.map(t => String(t.id) === String(topicId) ? { ...t, bound_anime_id: animeId, bound_anime_title: boundTitle } : t);
+
+      try {
+        await supabaseClient.from('forum_topics').update({
+          bound_anime_id: animeId,
+          bound_anime_title: boundTitle
+        }).match({ id: topicId });
+        showToast('Тема успешно привязана к релизу!');
+      } catch (e) {
+        console.warn("Error binding topic:", e);
+      }
     }
 
     function renderSavedGroupsAdminList() {
       const container = document.getElementById('saved-groups-admin-list');
       if (state.savedGroups.length === 0) {
-        container.innerHTML = `<div class="text-center py-6 text-slate-500 text-xs">Бот еще не добавлен ни в одну группу или не получил сообщения</div>`;
+        container.innerHTML = `<div class="text-center py-4 text-slate-500 text-xs">Бот еще не добавлен ни в одну группу</div>`;
         return;
       }
 
@@ -1784,7 +2128,6 @@
     }
 
     async function toggleWorkChat(groupId, makeWork) {
-      // If setting this to work chat, unset others
       if (makeWork) {
         state.savedGroups = state.savedGroups.map(g => ({ ...g, is_work_chat: String(g.id) === String(groupId) }));
       } else {
@@ -1805,10 +2148,11 @@
 
     async function addNewAdmin() {
       const val = document.getElementById('newAdminInput').value.trim().replace(/^@/, '');
+      const canReport = document.getElementById('newAdminCanReport').checked;
       if (!val) return;
 
       const isNumeric = /^\d+$/.test(val);
-      const newAdminObj = isNumeric ? { tg_id: Number(val) } : { username: val.toLowerCase() };
+      const newAdminObj = isNumeric ? { tg_id: Number(val), can_view_reports: canReport } : { username: val.toLowerCase(), can_view_reports: canReport };
 
       try {
         const { data, error } = await supabaseClient.from('team_admins').insert(newAdminObj).select();
