@@ -303,6 +303,7 @@
       .search-input-wrap {
         position: relative;
         flex: 1;
+        min-width: 0;
         display: flex;
         align-items: center;
       }
@@ -427,7 +428,7 @@
       /* Responsive Card Grid (1 col mobile, 2-3 cols desktop) */
       .cards-grid {
         display: grid;
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
         gap: 14px;
       }
 
@@ -446,6 +447,8 @@
 
       /* Anime Card */
       .anime-card {
+        min-width: 0;
+        width: 100%;
         display: flex;
         flex-direction: column;
         background: var(--surface);
@@ -458,12 +461,14 @@
       }
 
       .anime-card-row {
+        min-width: 0;
         display: flex;
         gap: 14px;
         align-items: flex-start;
       }
 
       .search-card-btn {
+        min-width: 0;
         width: 100%;
         text-align: left;
         display: flex;
@@ -500,16 +505,28 @@
       }
 
       .poster-fallback {
+        width: 100%;
+        height: 100%;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         gap: 4px;
-        padding: 6px;
+        padding: 8px 6px;
         text-align: center;
-        color: var(--text-muted);
+        font-family: var(--font-display);
         font-size: 10px;
-        line-height: 1.2;
+        font-weight: 600;
+        line-height: 1.25;
+        overflow: hidden;
+      }
+
+      .poster-fallback-title {
+        display: -webkit-box;
+        -webkit-line-clamp: 4;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        word-break: break-word;
       }
 
       .card-body {
@@ -925,6 +942,26 @@
         flex-shrink: 0;
       }
 
+      .modal-desc-box {
+        margin-bottom: 16px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--text-muted);
+        max-height: 126px;
+        overflow-y: auto;
+        white-space: pre-line;
+      }
+
+      .modal-release-line {
+        margin-top: 4px;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
       .form-section {
         margin-bottom: 16px;
       }
@@ -1293,7 +1330,8 @@
             <div class="poster-frame" id="modalPosterWrap"></div>
             <div style="min-width: 0">
               <h3 id="modalTitle" class="modal-title"></h3>
-              <div id="modalSubtitle" class="meta-line"></div>
+              <div id="modalSubtitle" class="meta-line tabular-nums"></div>
+              <div id="modalReleaseLine" class="modal-release-line tabular-nums"></div>
             </div>
           </div>
           <button id="modalCloseBtn" type="button" class="modal-close" aria-label="Закрыть окно настроек">
@@ -1303,6 +1341,8 @@
             </svg>
           </button>
         </div>
+
+        <div id="modalDescriptionBox" class="modal-desc-box hidden"></div>
 
         <form id="trackingForm">
           <div class="form-section">
@@ -1469,8 +1509,8 @@
       //     track_status, track_license, track_date, notify_target, watched_episodes
       //   history: user_id, anime_id, title, poster, rating, note, finished_at
       // =========================================================================
-      const SUPABASE_URL = 'https://ztdddyjdzrjybwwjmksv.supabase.co';
-      const SUPABASE_KEY = 'sb_publishable_mM0RHaRg5JzcLCdBRFWTeg_rerDn153';
+      const SUPABASE_URL = 'https://supabase.co';
+      const SUPABASE_KEY = 'ВСТАВЬ_СЮДА_КЛЮЧ_sb_publishable_...';
 
       const SHIKIMORI_API_BASE = 'https://shikimori.io';
       const SHIKIMORI_MIRROR_BASE = 'https://shikimori.io';
@@ -1484,22 +1524,60 @@
             key &&
             !url.includes('YOUR_PROJECT_ID') &&
             !key.includes('YOUR_SUPABASE_ANON_KEY') &&
-            !key.includes('ВСТАВЬ_СЮДА_СВОЙ_КЛЮЧ') &&
+            !key.includes('ВСТАВЬ_СЮДА') &&
             url.startsWith('https://')
         );
       }
 
-      function resolvePosterUrl(imageObj, base = SHIKIMORI_MIRROR_BASE) {
-        if (!imageObj) return '';
-        const raw =
-          typeof imageObj === 'string'
-            ? imageObj
-            : imageObj.preview || imageObj.original || imageObj.x96 || '';
+      function getPosterUrl(anime) {
+        if (!anime) return '';
+        let raw = '';
+        if (typeof anime === 'string') {
+          raw = anime.trim();
+        } else if (anime.image && typeof anime.image === 'object') {
+          raw = String(
+            anime.image.original ||
+              anime.image.main ||
+              anime.image.preview ||
+              anime.image.x96 ||
+              ''
+          ).trim();
+        } else if (typeof anime.image === 'string') {
+          raw = anime.image.trim();
+        } else {
+          raw = String(
+            anime.original || anime.main || anime.preview || anime.x96 || anime.poster || ''
+          ).trim();
+        }
         if (!raw || raw.includes('missing_')) return '';
+        if (raw.startsWith('/')) {
+          return `${SHIKIMORI_MIRROR_BASE}${raw}`;
+        }
         if (raw.startsWith('http://') || raw.startsWith('https://')) {
           return raw.replace(/^https?:\/\/shikimori\.one(?=\/|$)/i, 'https://shikimori.io');
         }
-        return base.replace(/\/$/, '') + (raw.startsWith('/') ? raw : '/' + raw);
+        return `${SHIKIMORI_MIRROR_BASE}/${raw}`;
+      }
+
+      function resolvePosterUrl(imageObj) {
+        return getPosterUrl(imageObj);
+      }
+
+      function getPosterPlaceholderPalette(title) {
+        const palettes = [
+          { bg: '#e3effc', fg: '#184b85' },
+          { bg: '#e6f5ed', fg: '#16603b' },
+          { bg: '#fef0e1', fg: '#8f470c' },
+          { bg: '#ede9fe', fg: '#4c349e' },
+          { bg: '#fce8ef', fg: '#96224b' },
+          { bg: '#e2f4f6', fg: '#145f69' },
+        ];
+        const str = String(title || 'Anime');
+        let hash = 0;
+        for (let i = 0; i < str.length; i += 1) {
+          hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+        }
+        return palettes[hash % palettes.length];
       }
 
       function formatFetchError(err) {
@@ -1591,7 +1669,7 @@
 
       function formatAnimeKind(kind) {
         const map = {
-          tv: 'TV Сериал',
+          tv: 'TV',
           movie: 'Фильм',
           ova: 'OVA',
           ona: 'ONA',
@@ -1599,7 +1677,7 @@
           tv_special: 'TV Спешл',
           music: 'Клип',
         };
-        return map[kind] || (kind ? kind.toUpperCase() : 'Аниме');
+        return map[kind] || (kind ? String(kind).toUpperCase() : 'Аниме');
       }
 
       function formatAnimeStatus(status) {
@@ -1611,24 +1689,103 @@
         return map[status] || status || 'Неизвестно';
       }
 
-      function formatNextEpisode(isoString, status) {
-        if (!isoString) {
-          if (status === 'released') return 'Сезон завершён';
-          if (status === 'anons') return 'Дата не объявлена';
-          return 'Нет расписания';
+      function extractReleaseYear(anime) {
+        if (!anime) return '';
+        const candidates = [anime.aired_on, anime.released_on, anime.next_episode_at];
+        for (const val of candidates) {
+          if (!val) continue;
+          const match = /^(\d{4})/.exec(String(val).trim());
+          if (match) return match[1];
         }
-        const date = new Date(isoString);
-        if (Number.isNaN(date.getTime())) return 'Нет расписания';
+        return '';
+      }
+
+      function formatDateOnlyRu(rawDate) {
+        const raw = String(rawDate || '').trim();
+        if (!raw) return '';
+        const fullMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+        if (fullMatch) {
+          return `${fullMatch[3]}.${fullMatch[2]}.${fullMatch[1]}`;
+        }
+        const monthMatch = /^(\d{4})-(\d{2})$/.exec(raw);
+        if (monthMatch) {
+          return `${monthMatch[2]}.${monthMatch[1]}`;
+        }
+        const yearMatch = /^(\d{4})$/.exec(raw);
+        if (yearMatch) {
+          return `${yearMatch[1]} г.`;
+        }
+        const parsed = new Date(raw);
+        if (Number.isNaN(parsed.getTime())) return raw;
+        return new Intl.DateTimeFormat('ru-RU', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        }).format(parsed);
+      }
+
+      function formatDateTimeRu(rawIso) {
+        const raw = String(rawIso || '').trim();
+        if (!raw) return '';
+        if (!raw.includes('T') && /^\d{4}-\d{2}-\d{2}/.test(raw)) {
+          return formatDateOnlyRu(raw);
+        }
+        const date = new Date(raw);
+        if (Number.isNaN(date.getTime())) return raw;
         try {
           return new Intl.DateTimeFormat('ru-RU', {
-            day: 'numeric',
-            month: 'short',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
           }).format(date);
         } catch {
           return date.toLocaleString('ru-RU');
         }
+      }
+
+      function formatReleaseDate(animeOrIso) {
+        if (!animeOrIso) return 'Дата выхода уточняется';
+        if (typeof animeOrIso === 'string') {
+          return formatDateTimeRu(animeOrIso) || 'Дата выхода уточняется';
+        }
+        if (animeOrIso.next_episode_at) {
+          return formatDateTimeRu(animeOrIso.next_episode_at);
+        }
+        if (animeOrIso.aired_on) {
+          return formatDateOnlyRu(animeOrIso.aired_on);
+        }
+        if (animeOrIso.released_on) {
+          return formatDateOnlyRu(animeOrIso.released_on);
+        }
+        return 'Дата выхода уточняется';
+      }
+
+      function formatNextEpisode(isoString, status) {
+        if (isoString) {
+          return formatDateTimeRu(isoString);
+        }
+        if (status === 'released') return 'Сезон завершён';
+        return 'Дата выхода уточняется';
+      }
+
+      function stripHtmlTags(raw) {
+        if (!raw) return '';
+        return String(raw)
+          .replace(/<br\s*\/?>/gi, '\n')
+          .replace(/<\/p>/gi, '\n')
+          .replace(/<[^>]*>/g, '')
+          .replace(/\[(?:character|anime|manga|person|url|b|i|u|s|spoiler|quote)[^\]]*\]/gi, '')
+          .replace(/\[\/(?:character|anime|manga|person|url|b|i|u|s|spoiler|quote)\]/gi, '')
+          .replace(/&nbsp;/gi, ' ')
+          .replace(/&quot;/gi, '"')
+          .replace(/&#39;/gi, "'")
+          .replace(/&lt;/gi, '<')
+          .replace(/&gt;/gi, '>')
+          .replace(/&amp;/gi, '&')
+          .replace(/\n{3,}/g, '\n\n')
+          .trim();
       }
 
       function extractLicenseText(detail) {
@@ -1982,6 +2139,8 @@
         modalPosterWrap: document.getElementById('modalPosterWrap'),
         modalTitle: document.getElementById('modalTitle'),
         modalSubtitle: document.getElementById('modalSubtitle'),
+        modalReleaseLine: document.getElementById('modalReleaseLine'),
+        modalDescriptionBox: document.getElementById('modalDescriptionBox'),
         modalCloseBtn: document.getElementById('modalCloseBtn'),
         modalCancelBtn: document.getElementById('modalCancelBtn'),
         trackingForm: document.getElementById('trackingForm'),
@@ -2038,18 +2197,16 @@
       }
 
       function renderPosterMarkup(posterUrl, title) {
-        const safeTitle = escapeHtml(title || 'Аниме');
+        const displayTitle = title || 'Аниме';
+        const safeTitle = escapeHtml(displayTitle);
+        const palette = getPosterPlaceholderPalette(displayTitle);
+        const fallbackHtml = `
+          <div class="poster-fallback" style="background:${palette.bg};color:${palette.fg};">
+            <span class="poster-fallback-title">${safeTitle}</span>
+          </div>
+        `;
         if (!posterUrl) {
-          return `
-            <div class="poster-fallback">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                <rect width="18" height="18" x="3" y="3" rx="2" />
-                <circle cx="9" cy="9" r="2" />
-                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-              </svg>
-              <span>Нет постера</span>
-            </div>
-          `;
+          return fallbackHtml;
         }
         return `
           <img
@@ -2059,12 +2216,8 @@
             loading="lazy"
             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
           />
-          <div class="poster-fallback" style="display:none;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-              <rect width="18" height="18" x="3" y="3" rx="2" />
-              <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-            </svg>
-            <span>Постер</span>
+          <div class="poster-fallback" style="display:none;background:${palette.bg};color:${palette.fg};">
+            <span class="poster-fallback-title">${safeTitle}</span>
           </div>
         `;
       }
@@ -2133,14 +2286,17 @@
           .map((anime) => {
             const title = anime.russian || anime.name || 'Без названия';
             const origTitle = anime.russian && anime.name !== anime.russian ? anime.name : '';
-            const poster = resolvePosterUrl(anime.image);
+            const poster = getPosterUrl(anime);
             const episodesLabel =
               anime.episodes > 0
                 ? `${anime.episodes} эп.`
                 : anime.episodes_aired > 0
                   ? `${anime.episodes_aired} эп.`
                   : 'эп. уточняются';
+            const yearLabel = extractReleaseYear(anime);
             const scoreLabel = anime.score && Number(anime.score) > 0 ? `★ ${anime.score}` : '';
+            const releaseDateText = formatReleaseDate(anime);
+            const releasePrefix = anime.next_episode_at ? 'След. серия: ' : anime.aired_on || anime.released_on ? 'Выход: ' : '';
             const isTracked = trackedIds.has(String(anime.id));
 
             return `
@@ -2159,13 +2315,17 @@
                     ${origTitle ? `<div class="card-subtitle">${escapeHtml(origTitle)}</div>` : ''}
                     <div class="meta-line tabular-nums">
                       <span>${escapeHtml(formatAnimeKind(anime.kind))}</span>
+                      ${yearLabel ? `<span aria-hidden="true">·</span><span>${escapeHtml(yearLabel)}</span>` : ''}
                       <span aria-hidden="true">·</span>
                       <span>${escapeHtml(formatAnimeStatus(anime.status))}</span>
                       <span aria-hidden="true">·</span>
                       <span>${escapeHtml(episodesLabel)}</span>
                       ${scoreLabel ? `<span aria-hidden="true">·</span><span>${escapeHtml(scoreLabel)}</span>` : ''}
                     </div>
-                    <div class="meta-line" style="margin-top: auto; padding-top: 4px;">
+                    <div class="meta-line tabular-nums">
+                      <span>${escapeHtml(releasePrefix + releaseDateText)}</span>
+                    </div>
+                    <div class="meta-line" style="margin-top: auto; padding-top: 2px;">
                       <span class="${isTracked ? 'meta-accent' : ''}">
                         ${isTracked ? 'В списке отслеживания · Изменить' : 'Нажмите, чтобы отслеживать'}
                       </span>
@@ -2215,12 +2375,12 @@
         el.trackingList.innerHTML = state.trackingItems
           .map((item) => {
             const title = item.title || 'Без названия';
-            const posterUrl = resolvePosterUrl(item.poster);
+            const posterUrl = getPosterUrl(item.poster);
             const watched = Number(item.watched_episodes) || 0;
             const total = Number(item.episodes) || 0;
             const totalLabel = total > 0 ? total : '?';
             const percent = calculateProgressPercent(watched, total);
-            const nextEp = formatNextEpisode(item.next_episode_at, item.status);
+            const nextEp = formatReleaseDate(item);
             const license = item.licensed_by ? item.licensed_by : 'Нет данных';
             const hasDateTracking = Boolean(item.track_date);
             const isDeleting = String(state.pendingDeleteId) === String(item.anime_id);
@@ -2245,7 +2405,7 @@
                     </div>
                     <div class="detail-rows">
                       <div class="detail-row">
-                        <span>След. серия</span>
+                        <span>Выход / серия</span>
                         <span class="tabular-nums">${escapeHtml(nextEp)}</span>
                       </div>
                       <div class="detail-row">
@@ -2521,12 +2681,40 @@
         });
       }
 
+      function updateModalSummary(animeData, existingRecord = null) {
+        const year = extractReleaseYear(animeData);
+        const scoreVal = animeData.score && Number(animeData.score) > 0 ? `★ ${animeData.score}` : '';
+        const statusVal = existingRecord?.status || animeData.status;
+        const subtitleParts = [
+          formatAnimeKind(animeData.kind),
+          year || '',
+          formatAnimeStatus(statusVal),
+          scoreVal,
+        ].filter(Boolean);
+
+        el.modalSubtitle.innerHTML = subtitleParts
+          .map((part) => `<span>${escapeHtml(part)}</span>`)
+          .join('<span aria-hidden="true">·</span>');
+
+        const releaseSource = {
+          next_episode_at: animeData.next_episode_at ?? existingRecord?.next_episode_at ?? null,
+          aired_on: animeData.aired_on ?? null,
+          released_on: animeData.released_on ?? null,
+        };
+        const prefix = releaseSource.next_episode_at
+          ? 'След. серия: '
+          : releaseSource.aired_on || releaseSource.released_on
+            ? 'Дата старта: '
+            : '';
+        el.modalReleaseLine.textContent = prefix + formatReleaseDate(releaseSource);
+      }
+
       async function openTrackingModal(animeData, existingRecord = null) {
         state.modalAnime = animeData;
         state.modalDetail = null;
 
         const title = existingRecord?.title || animeData.russian || animeData.name || 'Без названия';
-        const poster = resolvePosterUrl(existingRecord?.poster || animeData.image);
+        const poster = getPosterUrl(existingRecord?.poster) || getPosterUrl(animeData);
         const totalEp = existingRecord?.episodes ?? animeData.episodes ?? 0;
 
         state.modalWatched = existingRecord ? Number(existingRecord.watched_episodes) || 0 : 0;
@@ -2534,12 +2722,17 @@
         el.modalEpTotal.textContent = totalEp > 0 ? String(totalEp) : '?';
 
         el.modalTitle.textContent = title;
-        el.modalSubtitle.innerHTML = `
-          <span>${escapeHtml(formatAnimeKind(animeData.kind))}</span>
-          <span aria-hidden="true">·</span>
-          <span>${escapeHtml(formatAnimeStatus(existingRecord?.status || animeData.status))}</span>
-        `;
+        updateModalSummary(animeData, existingRecord);
         el.modalPosterWrap.innerHTML = renderPosterMarkup(poster, title);
+
+        const initialDesc = stripHtmlTags(animeData.description || animeData.description_html);
+        if (initialDesc) {
+          el.modalDescriptionBox.textContent = initialDesc;
+          el.modalDescriptionBox.classList.remove('hidden');
+        } else {
+          el.modalDescriptionBox.textContent = 'Загружаем описание...';
+          el.modalDescriptionBox.classList.remove('hidden');
+        }
 
         el.chkTrackEpisodes.checked = existingRecord ? Boolean(existingRecord.track_episodes) : true;
         el.chkTrackStatus.checked = existingRecord ? Boolean(existingRecord.track_status) : true;
@@ -2553,15 +2746,34 @@
 
         el.trackingModal.hidden = false;
 
-        // Подгружаем детали Shikimori для next_episode_at и licensed_by
+        // Подгружаем детали Shikimori для next_episode_at, licensed_by, description, score
         try {
           const detail = await fetchAnimeDetails(animeData.id || existingRecord?.anime_id);
           state.modalDetail = detail;
-          if (detail && detail.episodes > 0) {
-            el.modalEpTotal.textContent = String(detail.episodes);
+          if (detail) {
+            if (detail.episodes > 0) {
+              el.modalEpTotal.textContent = String(detail.episodes);
+            }
+            const detailPoster = getPosterUrl(detail);
+            if (!poster && detailPoster) {
+              el.modalPosterWrap.innerHTML = renderPosterMarkup(detailPoster, title);
+            }
+            updateModalSummary(detail, existingRecord);
+            const cleanDesc = stripHtmlTags(detail.description || detail.description_html);
+            if (cleanDesc) {
+              el.modalDescriptionBox.textContent = cleanDesc;
+              el.modalDescriptionBox.classList.remove('hidden');
+            } else {
+              el.modalDescriptionBox.textContent = '';
+              el.modalDescriptionBox.classList.add('hidden');
+            }
           }
         } catch (err) {
           console.warn('Detail fetch skipped:', err);
+          if (!initialDesc) {
+            el.modalDescriptionBox.textContent = '';
+            el.modalDescriptionBox.classList.add('hidden');
+          }
           showToast(`Не удалось загрузить детали: ${formatFetchError(err)}`);
         }
       }
@@ -2587,15 +2799,26 @@
           (item) => String(item.anime_id) === String(base.id || base.anime_id)
         );
 
+        const resolvedPoster = getPosterUrl(detail) || getPosterUrl(base) || getPosterUrl(existing?.poster);
+        const resolvedReleaseAt =
+          detail?.next_episode_at ||
+          detail?.aired_on ||
+          detail?.released_on ||
+          base.next_episode_at ||
+          base.aired_on ||
+          base.released_on ||
+          existing?.next_episode_at ||
+          null;
+
         const payload = buildTrackingPayload({
           userId: currentUserId,
           animeId: base.id || base.anime_id,
-          title: existing?.title || base.russian || base.name || 'Без названия',
-          poster: existing?.poster || resolvePosterUrl(detail?.image || base.image),
+          title: existing?.title || detail?.russian || base.russian || detail?.name || base.name || 'Без названия',
+          poster: resolvedPoster || existing?.poster || '',
           status: detail?.status || base.status || existing?.status || 'ongoing',
           episodes: detail?.episodes || base.episodes || existing?.episodes || 0,
           episodesAired: detail?.episodes_aired ?? base.episodes_aired ?? existing?.episodes_aired ?? 0,
-          nextEpisodeAt: detail?.next_episode_at ?? existing?.next_episode_at ?? null,
+          nextEpisodeAt: resolvedReleaseAt,
           licensedBy: extractLicenseText(detail) || existing?.licensed_by || '',
           trackEpisodes: el.chkTrackEpisodes.checked,
           trackStatus: el.chkTrackStatus.checked,
