@@ -1,3887 +1,1053 @@
-<!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
-    />
-    <title>Anime Tracker Mini App</title>
-    <meta
-      name="description"
-      content="Telegram Mini App для отслеживания аниме на базе Shikimori API и Supabase."
-    />
-    <meta property="og:title" content="Anime Tracker Mini App" />
-    <meta
-      property="og:description"
-      content="Telegram Mini App для отслеживания аниме на базе Shikimori API и Supabase."
-    />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
-
-    <!-- Fonts: Plus Jakarta Sans (Display), DM Sans (Body), JetBrains Mono (Tabular Numerals) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@600;700&display=swap"
-      rel="stylesheet"
-    />
-
-    <!-- Telegram Mini App SDK -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Supabase JS v2 via CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <style>
-      :root {
-        --bg: #f5f6f8;
-        --surface: #ffffff;
-        --surface-muted: #eceff3;
-        --text: #0f172a;
-        --text-muted: #5b6577;
-        --accent: #2481cc;
-        --accent-hover: #1d6eb0;
-        --accent-text: #ffffff;
-        --border: rgba(15, 23, 42, 0.09);
-        --danger: #dc2626;
-        --danger-bg: rgba(220, 38, 38, 0.09);
-        --warning-bg: #fff8eb;
-        --warning-border: rgba(217, 119, 6, 0.28);
-        --warning-text: #92400e;
-        --success: #15803d;
-        --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.05);
-        --shadow-modal: 0 20px 50px rgba(15, 23, 42, 0.18);
-        --radius-card: 16px;
-        --radius-control: 12px;
-        --font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-        --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-        --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
-        --header-h: 52px;
-        --tabbar-h: 62px;
-      }
-
-      html.dark {
-        --bg: #11161d;
-        --surface: #1a222c;
-        --surface-muted: #242e3b;
-        --text: #f1f5f9;
-        --text-muted: #9aa7b8;
-        --accent: #4ea4e8;
-        --accent-hover: #3b93da;
-        --accent-text: #ffffff;
-        --border: rgba(241, 245, 249, 0.1);
-        --danger: #f87171;
-        --danger-bg: rgba(248, 113, 113, 0.14);
-        --warning-bg: rgba(245, 158, 11, 0.12);
-        --warning-border: rgba(245, 158, 11, 0.35);
-        --warning-text: #fcd34d;
-        --success: #4ade80;
-        --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.28);
-        --shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.55);
-      }
-
-      *,
-      *::before,
-      *::after {
-        box-sizing: border-box;
-      }
-
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-        background-color: var(--bg);
-        color: var(--text);
-        font-family: var(--font-body);
-        font-size: 15px;
-        line-height: 1.5;
-        -webkit-font-smoothing: antialiased;
-        -webkit-tap-highlight-color: transparent;
-        min-height: 100%;
-      }
-
-      button,
-      input,
-      textarea,
-      select {
-        font: inherit;
-        color: inherit;
-      }
-
-      button {
-        cursor: pointer;
-        border: none;
-        background: none;
-      }
-
-      button:focus-visible,
-      input:focus-visible,
-      textarea:focus-visible,
-      select:focus-visible {
-        outline: 2px solid var(--accent);
-        outline-offset: 2px;
-      }
-
-      .tabular-nums {
-        font-variant-numeric: tabular-nums;
-      }
-
-      .mono {
-        font-family: var(--font-mono);
-        font-variant-numeric: tabular-nums;
-      }
-
-      /* Top App Bar (compact 52px sticky bar) */
-      .app-header {
-        position: sticky;
-        top: 0;
-        z-index: 30;
-        height: var(--header-h);
-        background: color-mix(in srgb, var(--surface) 88%, transparent);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-bottom: 1px solid var(--border);
-      }
-
-      .app-header-inner {
-        max-width: 1120px;
-        margin: 0 auto;
-        height: 100%;
-        padding: 0 16px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-      }
-
-      .brand-title {
-        font-family: var(--font-display);
-        font-weight: 700;
-        font-size: 17px;
-        letter-spacing: -0.015em;
-        white-space: nowrap;
-        margin: 0;
-      }
-
-      .header-actions {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-shrink: 0;
-      }
-
-      .user-label {
-        font-size: 12px;
-        color: var(--text-muted);
-        white-space: nowrap;
-      }
-
-      .btn-collapse {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        min-height: 40px;
-        padding: 0 14px;
-        border-radius: 10px;
-        background: var(--surface-muted);
-        color: var(--text);
-        font-size: 13px;
-        font-weight: 500;
-        white-space: nowrap;
-        transition: opacity 150ms ease, transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
-      }
-
-      .btn-collapse:hover {
-        opacity: 0.88;
-      }
-
-      .btn-collapse:active {
-        transform: scale(0.97);
-      }
-
-      /* Main Container */
-      .app-main {
-        max-width: 1120px;
-        margin: 0 auto;
-        padding: 16px 16px calc(var(--tabbar-h) + 28px + env(safe-area-inset-bottom, 0px));
-      }
-
-      /* Warning & Info Banners */
-      .notice-banner {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 12px 14px;
-        margin-bottom: 14px;
-        border-radius: var(--radius-control);
-        background: var(--warning-bg);
-        border: 1px solid var(--warning-border);
-        color: var(--warning-text);
-        font-size: 13px;
-        line-height: 1.45;
-      }
-
-      .notice-banner.notice-info {
-        background: var(--surface);
-        border-color: var(--border);
-        color: var(--text-muted);
-      }
-
-      .notice-banner.notice-info strong {
-        color: var(--text);
-      }
-
-      .notice-banner-content {
-        display: flex;
-        align-items: flex-start;
-        gap: 10px;
-      }
-
-      .notice-banner svg {
-        flex-shrink: 0;
-        margin-top: 1px;
-      }
-
-      .notice-banner strong {
-        font-weight: 600;
-      }
-
-      .notice-sub {
-        display: block;
-        margin-top: 2px;
-        opacity: 0.88;
-        font-size: 12px;
-      }
-
-      .notice-close {
-        min-width: 36px;
-        min-height: 36px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 8px;
-        color: inherit;
-        flex-shrink: 0;
-      }
-
-      .notice-close:hover {
-        background: rgba(0, 0, 0, 0.06);
-      }
-
-      /* Section Header */
-      .view-header {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: 8px 16px;
-        margin-bottom: 16px;
-      }
-
-      .view-title {
-        font-family: var(--font-display);
-        font-size: 22px;
-        font-weight: 700;
-        letter-spacing: -0.02em;
-        margin: 0;
-      }
-
-      .view-meta {
-        font-size: 13px;
-        color: var(--text-muted);
-      }
-
-      /* Search Bar */
-      .search-form {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 20px;
-      }
-
-      .search-input-wrap {
-        position: relative;
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        align-items: center;
-      }
-
-      .search-input-icon {
-        position: absolute;
-        left: 14px;
-        color: var(--text-muted);
-        pointer-events: none;
-      }
-
-      .search-input {
-        width: 100%;
-        min-height: 46px;
-        padding: 10px 40px 10px 42px;
-        border-radius: var(--radius-control);
-        border: 1px solid var(--border);
-        background: var(--surface);
-        color: var(--text);
-        font-size: 15px;
-        transition: border-color 150ms ease;
-      }
-
-      .search-input::placeholder {
-        color: var(--text-muted);
-      }
-
-      .search-input:focus {
-        outline: none;
-        border-color: var(--accent);
-      }
-
-      .search-clear {
-        position: absolute;
-        right: 6px;
-        min-width: 36px;
-        min-height: 36px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 8px;
-        color: var(--text-muted);
-      }
-
-      .search-clear:hover {
-        color: var(--text);
-      }
-
-      .btn-primary {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        min-height: 46px;
-        padding: 10px 20px;
-        border-radius: var(--radius-control);
-        background: var(--accent);
-        color: var(--accent-text);
-        font-weight: 600;
-        font-size: 14px;
-        white-space: nowrap;
-        transition: background-color 150ms ease, transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
-      }
-
-      .btn-primary:hover {
-        background: var(--accent-hover);
-      }
-
-      .btn-primary:active {
-        transform: scale(0.98);
-      }
-
-      .btn-primary:disabled {
-        opacity: 0.55;
-        cursor: not-allowed;
-      }
-
-      .btn-secondary {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        min-height: 44px;
-        padding: 8px 14px;
-        border-radius: 10px;
-        background: var(--surface-muted);
-        color: var(--text);
-        font-weight: 500;
-        font-size: 13px;
-        white-space: nowrap;
-        transition: opacity 150ms ease, transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
-      }
-
-      .btn-secondary:hover {
-        opacity: 0.85;
-      }
-
-      .btn-secondary:active {
-        transform: scale(0.98);
-      }
-
-      .btn-danger {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        min-height: 44px;
-        padding: 8px 14px;
-        border-radius: 10px;
-        background: var(--danger-bg);
-        color: var(--danger);
-        font-weight: 500;
-        font-size: 13px;
-        white-space: nowrap;
-        transition: opacity 150ms ease, transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
-      }
-
-      .btn-danger:hover {
-        opacity: 0.88;
-      }
-
-      /* Responsive Card Grid (1 col mobile, 2-3 cols desktop) */
-      .cards-grid {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        gap: 14px;
-      }
-
-      @media (min-width: 720px) {
-        .cards-grid {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 16px;
-        }
-      }
-
-      @media (min-width: 1080px) {
-        .cards-grid {
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-        }
-      }
-
-      /* Anime Card */
-      .anime-card {
-        min-width: 0;
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-card);
-        box-shadow: var(--shadow-card);
-        padding: 14px;
-        gap: 12px;
-        transition: border-color 150ms ease;
-      }
-
-      .anime-card-row {
-        min-width: 0;
-        display: flex;
-        gap: 14px;
-        align-items: flex-start;
-      }
-
-      .search-card-btn {
-        min-width: 0;
-        width: 100%;
-        text-align: left;
-        display: flex;
-        gap: 14px;
-        align-items: flex-start;
-        padding: 0;
-        border-radius: 10px;
-      }
-
-      .anime-card:has(.search-card-btn):hover {
-        border-color: var(--accent);
-      }
-
-      /* Poster & Resilient Fallback */
-      .poster-frame {
-        position: relative;
-        width: 76px;
-        height: 108px;
-        flex-shrink: 0;
-        border-radius: 10px;
-        overflow: hidden;
-        background: var(--surface-muted);
-        border: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .poster-frame img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-      }
-
-      .poster-fallback {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 4px;
-        padding: 8px 6px;
-        text-align: center;
-        font-family: var(--font-display);
-        font-size: 10px;
-        font-weight: 600;
-        line-height: 1.25;
-        overflow: hidden;
-      }
-
-      .poster-fallback-title {
-        display: -webkit-box;
-        -webkit-line-clamp: 4;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        word-break: break-word;
-      }
-
-      .card-body {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-
-      .card-title {
-        font-family: var(--font-display);
-        font-size: 16px;
-        font-weight: 600;
-        line-height: 1.3;
-        margin: 0;
-        color: var(--text);
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-      }
-
-      .card-subtitle {
-        font-size: 12px;
-        color: var(--text-muted);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      /* Clean Unboxed Metadata (zero-pill discipline) */
-      .meta-line {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 6px;
-        font-size: 12px;
-        color: var(--text-muted);
-        line-height: 1.4;
-      }
-
-      .meta-accent {
-        color: var(--accent);
-        font-weight: 600;
-      }
-
-      .date-track-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        color: var(--accent);
-        font-size: 12px;
-        font-weight: 500;
-        white-space: nowrap;
-      }
-
-      .detail-rows {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        font-size: 13px;
-        color: var(--text-muted);
-        padding-top: 2px;
-      }
-
-      .detail-row {
-        display: flex;
-        justify-content: space-between;
-        gap: 8px;
-      }
-
-      .detail-row span:last-child {
-        color: var(--text);
-        font-weight: 500;
-        text-align: right;
-      }
-
-      /* Progress Bar & Stepper */
-      .progress-block {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        padding-top: 8px;
-        border-top: 1px solid var(--border);
-      }
-
-      .progress-top {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-      }
-
-      .progress-label {
-        font-size: 13px;
-        color: var(--text-muted);
-      }
-
-      .progress-label strong {
-        color: var(--text);
-        font-family: var(--font-mono);
-        font-weight: 600;
-      }
-
-      .stepper-group {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-      }
-
-      .stepper-btn {
-        min-width: 40px;
-        min-height: 40px;
-        border-radius: 10px;
-        background: var(--surface-muted);
-        color: var(--text);
-        font-weight: 600;
-        font-size: 15px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        transition: background-color 120ms ease, transform 120ms ease;
-      }
-
-      .stepper-btn:hover {
-        background: var(--border);
-      }
-
-      .stepper-btn:active {
-        transform: scale(0.95);
-      }
-
-      .progress-track {
-        width: 100%;
-        height: 6px;
-        border-radius: 999px;
-        background: var(--surface-muted);
-        overflow: hidden;
-      }
-
-      .progress-fill {
-        height: 100%;
-        border-radius: 999px;
-        background: var(--accent);
-        transition: width 200ms ease;
-      }
-
-      /* Card Action Footer */
-      .card-actions {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 8px;
-        padding-top: 4px;
-      }
-
-      .confirm-delete-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        padding: 8px 10px;
-        border-radius: 10px;
-        background: var(--danger-bg);
-        font-size: 13px;
-        color: var(--danger);
-      }
-
-      .confirm-delete-btns {
-        display: flex;
-        gap: 6px;
-      }
-
-      /* History Card Controls */
-      .score-grid {
-        display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 6px;
-      }
-
-      @media (min-width: 420px) {
-        .score-grid {
-          grid-template-columns: repeat(10, minmax(0, 1fr));
-        }
-      }
-
-      .score-btn {
-        min-height: 40px;
-        border-radius: 8px;
-        background: var(--surface-muted);
-        color: var(--text-muted);
-        font-family: var(--font-mono);
-        font-size: 13px;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: background-color 140ms ease, color 140ms ease;
-      }
-
-      .score-btn.active {
-        background: var(--accent);
-        color: var(--accent-text);
-      }
-
-      .note-textarea {
-        width: 100%;
-        min-height: 76px;
-        padding: 10px 12px;
-        border-radius: 10px;
-        border: 1px solid var(--border);
-        background: var(--bg);
-        color: var(--text);
-        font-size: 14px;
-        resize: vertical;
-      }
-
-      .note-textarea:focus {
-        outline: none;
-        border-color: var(--accent);
-      }
-
-      .history-footer {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-      }
-
-      .saved-indicator {
-        font-size: 12px;
-        color: var(--success);
-        font-weight: 500;
-      }
-
-      /* Empty / Loading / Error States */
-      .state-box {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-card);
-        padding: 36px 20px;
-        text-align: center;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 10px;
-      }
-
-      .state-box-icon {
-        width: 44px;
-        height: 44px;
-        border-radius: 12px;
-        background: var(--surface-muted);
-        color: var(--text-muted);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .state-title {
-        font-family: var(--font-display);
-        font-size: 16px;
-        font-weight: 600;
-        margin: 0;
-      }
-
-      .state-desc {
-        font-size: 14px;
-        color: var(--text-muted);
-        max-width: 380px;
-        margin: 0;
-      }
-
-      /* Bottom Tab Bar (Fixed thumb zone, compact 62px) */
-      .bottom-nav {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        z-index: 40;
-        background: color-mix(in srgb, var(--surface) 92%, transparent);
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        border-top: 1px solid var(--border);
-        padding-bottom: env(safe-area-inset-bottom, 0px);
-      }
-
-      .bottom-nav-inner {
-        max-width: 720px;
-        margin: 0 auto;
-        height: var(--tabbar-h);
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-      }
-
-      .tab-btn {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 3px;
-        min-height: 48px;
-        color: var(--text-muted);
-        font-size: 11px;
-        font-weight: 500;
-        transition: color 150ms ease;
-      }
-
-      .tab-btn.active {
-        color: var(--accent);
-        font-weight: 600;
-      }
-
-      .tab-btn svg {
-        width: 22px;
-        height: 22px;
-      }
-
-      /* Release Calendar */
-      .calendar-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-card);
-        box-shadow: var(--shadow-card);
-        padding: 14px;
-        margin-bottom: 16px;
-      }
-
-      .calendar-toolbar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        margin-bottom: 12px;
-      }
-
-      .calendar-month-center {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        min-width: 0;
-      }
-
-      .calendar-month-label {
-        font-family: var(--font-display);
-        font-size: 16px;
-        font-weight: 700;
-        text-transform: capitalize;
-        margin: 0;
-        white-space: nowrap;
-      }
-
-      .cal-nav-btn {
-        min-width: 44px;
-        min-height: 44px;
-        border-radius: 12px;
-        background: var(--surface-muted);
-        color: var(--text);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        transition: opacity 150ms ease, transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
-      }
-
-      .cal-nav-btn:hover {
-        opacity: 0.86;
-      }
-
-      .cal-nav-btn:active {
-        transform: scale(0.95);
-      }
-
-      .cal-today-btn {
-        min-height: 32px;
-        padding: 4px 10px;
-        border-radius: 8px;
-        background: var(--surface-muted);
-        color: var(--accent);
-        font-size: 12px;
-        font-weight: 600;
-        white-space: nowrap;
-      }
-
-      .calendar-weekdays {
-        display: grid;
-        grid-template-columns: repeat(7, minmax(0, 1fr));
-        gap: 4px;
-        margin-bottom: 6px;
-      }
-
-      .calendar-weekday {
-        text-align: center;
-        font-size: 11px;
-        font-weight: 600;
-        color: var(--text-muted);
-        padding: 2px 0;
-      }
-
-      .calendar-grid {
-        display: grid;
-        grid-template-columns: repeat(7, minmax(0, 1fr));
-        gap: 4px;
-      }
-
-      .cal-day-spacer {
-        min-height: 46px;
-      }
-
-      .cal-day-btn {
-        min-height: 46px;
-        width: 100%;
-        padding: 4px 2px;
-        border-radius: 12px;
-        border: 1px solid transparent;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 3px;
-        font-family: var(--font-mono);
-        font-size: 13px;
-        font-weight: 500;
-        color: var(--text);
-        transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
-      }
-
-      .cal-day-btn:hover {
-        background: var(--surface-muted);
-      }
-
-      .cal-day-btn.is-today {
-        border-color: var(--accent);
-        color: var(--accent);
-        font-weight: 700;
-      }
-
-      .cal-day-btn.has-release {
-        background: color-mix(in srgb, var(--accent) 11%, transparent);
-        font-weight: 700;
-      }
-
-      .cal-day-btn.is-selected {
-        background: var(--accent);
-        color: var(--accent-text);
-        border-color: var(--accent);
-        font-weight: 700;
-      }
-
-      .cal-day-num {
-        line-height: 1;
-      }
-
-      .cal-day-marker {
-        height: 12px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .cal-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 999px;
-        background: var(--accent);
-      }
-
-      .cal-count-badge {
-        font-family: var(--font-mono);
-        font-size: 10px;
-        font-weight: 700;
-        line-height: 1;
-        padding: 2px 5px;
-        border-radius: 999px;
-        background: #f59e0b;
-        color: #111827;
-      }
-
-      .cal-day-btn.is-selected .cal-dot {
-        background: #ffffff;
-      }
-
-      .cal-day-btn.is-selected .cal-count-badge {
-        background: #ffffff;
-        color: var(--accent);
-      }
-
-      .calendar-day-header {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: 6px 12px;
-        margin-bottom: 12px;
-      }
-
-      .calendar-day-title {
-        font-family: var(--font-display);
-        font-size: 17px;
-        font-weight: 700;
-        margin: 0;
-      }
-
-      .calendar-release-btn {
-        min-width: 0;
-        width: 100%;
-        text-align: left;
-        display: flex;
-        gap: 14px;
-        align-items: flex-start;
-        padding: 0;
-        border-radius: 10px;
-      }
-
-      /* Modal / Bottom Sheet */
-      .modal-backdrop {
-        position: fixed;
-        inset: 0;
-        z-index: 60;
-        background: rgba(0, 0, 0, 0.52);
-        backdrop-filter: blur(4px);
-        display: flex;
-        align-items: flex-end;
-        justify-content: center;
-        padding: 0;
-      }
-
-      @media (min-width: 640px) {
-        .modal-backdrop {
-          align-items: center;
-          padding: 20px;
-        }
-      }
-
-      .modal-backdrop[hidden] {
-        display: none;
-      }
-
-      .modal-sheet {
-        width: 100%;
-        max-width: 500px;
-        max-height: 90vh;
-        overflow-y: auto;
-        background: var(--surface);
-        border-radius: 24px 24px 0 0;
-        box-shadow: var(--shadow-modal);
-        padding: 14px 20px calc(20px + env(safe-area-inset-bottom, 0px));
-        border: 1px solid var(--border);
-      }
-
-      @media (min-width: 640px) {
-        .modal-sheet {
-          border-radius: 20px;
-          padding: 22px;
-        }
-      }
-
-      .sheet-handle {
-        width: 38px;
-        height: 4px;
-        border-radius: 999px;
-        background: var(--border);
-        margin: 0 auto 14px;
-      }
-
-      @media (min-width: 640px) {
-        .sheet-handle {
-          display: none;
-        }
-      }
-
-      .modal-head {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 12px;
-        margin-bottom: 16px;
-      }
-
-      .modal-anime-summary {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-        min-width: 0;
-      }
-
-      .modal-anime-summary .poster-frame {
-        width: 56px;
-        height: 80px;
-      }
-
-      .modal-title {
-        font-family: var(--font-display);
-        font-size: 17px;
-        font-weight: 700;
-        margin: 0 0 4px;
-        line-height: 1.25;
-      }
-
-      .modal-close {
-        min-width: 40px;
-        min-height: 40px;
-        border-radius: 10px;
-        background: var(--surface-muted);
-        color: var(--text);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-      }
-
-      .modal-desc-box {
-        margin-bottom: 16px;
-        padding: 10px 12px;
-        border-radius: 12px;
-        background: var(--bg);
-        border: 1px solid var(--border);
-        font-size: 13px;
-        line-height: 1.5;
-        color: var(--text-muted);
-        max-height: 126px;
-        overflow-y: auto;
-        white-space: pre-line;
-      }
-
-      .modal-release-line {
-        margin-top: 4px;
-        font-size: 12px;
-        color: var(--text-muted);
-      }
-
-      .form-section {
-        margin-bottom: 16px;
-      }
-
-      .form-section-label {
-        display: block;
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--text);
-        margin-bottom: 8px;
-      }
-
-      .checkbox-list {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .checkbox-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        min-height: 48px;
-        padding: 10px 14px;
-        border-radius: 12px;
-        background: var(--bg);
-        border: 1px solid var(--border);
-        cursor: pointer;
-      }
-
-      .checkbox-text {
-        display: flex;
-        flex-direction: column;
-      }
-
-      .checkbox-title {
-        font-size: 14px;
-        font-weight: 500;
-      }
-
-      .checkbox-desc {
-        font-size: 12px;
-        color: var(--text-muted);
-      }
-
-      .checkbox-item input[type='checkbox'] {
-        width: 20px;
-        height: 20px;
-        accent-color: var(--accent);
-        cursor: pointer;
-        flex-shrink: 0;
-      }
-
-      .segmented-control {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 6px;
-        padding: 4px;
-        border-radius: 12px;
-        background: var(--bg);
-        border: 1px solid var(--border);
-      }
-
-      .segmented-btn {
-        min-height: 42px;
-        border-radius: 9px;
-        font-size: 13px;
-        font-weight: 500;
-        color: var(--text-muted);
-        transition: background-color 150ms ease, color 150ms ease;
-      }
-
-      .segmented-btn.active {
-        background: var(--accent);
-        color: var(--accent-text);
-        font-weight: 600;
-      }
-
-      .modal-episodes-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 10px 14px;
-        border-radius: 12px;
-        background: var(--bg);
-        border: 1px solid var(--border);
-      }
-
-      .modal-actions {
-        display: flex;
-        gap: 10px;
-        margin-top: 18px;
-      }
-
-      .modal-actions .btn-secondary {
-        flex: 1;
-      }
-
-      .modal-actions .btn-primary {
-        flex: 2;
-      }
-
-      /* Toast Notification */
-      .toast-wrap {
-        position: fixed;
-        left: 50%;
-        bottom: calc(var(--tabbar-h) + 14px + env(safe-area-inset-bottom, 0px));
-        transform: translateX(-50%);
-        z-index: 80;
-        pointer-events: none;
-        width: calc(100% - 32px);
-        max-width: 420px;
-        display: flex;
-        justify-content: center;
-      }
-
-      .toast-msg {
-        background: var(--text);
-        color: var(--surface);
-        padding: 10px 16px;
-        border-radius: 12px;
-        font-size: 13px;
-        font-weight: 500;
-        box-shadow: var(--shadow-modal);
-        opacity: 0;
-        transform: translateY(8px);
-        transition: opacity 180ms ease, transform 180ms ease;
-      }
-
-      .toast-msg.visible {
-        opacity: 1;
-        transform: translateY(0);
-      }
-
-      .error-message-box {
-        padding: 12px 14px;
-        border-radius: 12px;
-        background: var(--danger-bg);
-        border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
-        color: var(--danger);
-        font-family: var(--font-mono);
-        font-size: 13px;
-        line-height: 1.45;
-        word-break: break-word;
-        white-space: pre-wrap;
-        user-select: text;
-      }
-
-      .error-hint-text {
-        margin: 10px 0 0;
-        font-size: 12px;
-        color: var(--text-muted);
-        line-height: 1.45;
-      }
-
-      #errorModal {
-        z-index: 100;
-      }
-
-      .hidden {
-        display: none !important;
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        *,
-        *::before,
-        *::after {
-          transition-duration: 0.01ms !important;
-          animation-duration: 0.01ms !important;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <!-- Compact Top Bar -->
-    <header class="app-header">
-      <div class="app-header-inner">
-        <h1 class="brand-title">Аниме-трекер</h1>
-        <div class="header-actions">
-          <span id="userIdBadge" class="user-label tabular-nums"></span>
-          <button
-            id="closeAppBtn"
-            type="button"
-            class="btn-collapse"
-            aria-label="Свернуть или закрыть приложение"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M18 6 6 18" />
-              <path d="m6 6 12 12" />
-            </svg>
-            <span>Закрыть</span>
-          </button>
-        </div>
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Anisync • Трекер аниме и озвучки</title>
+  <meta name="description" content="Telegram Mini App трекер аниме и расписание команды озвучки на базе Shikimori и Supabase" />
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-[#0f172a] text-slate-100 min-h-screen font-sans selection:bg-indigo-500 selection:text-white antialiased pb-24">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-40 bg-[#1e293b]/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+        <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
       </div>
-    </header>
+      <div>
+        <h1 class="font-bold text-base text-slate-100 leading-tight">Anisync</h1>
+        <p id="user-role-label" class="text-xs text-slate-400">Загрузка прав...</p>
+      </div>
+    </div>
 
-    <!-- Main Content -->
-    <main class="app-main">
-      <!-- Warning if opened outside Telegram (no initDataUnsafe.user.id) -->
-      <div id="telegramWarning" class="notice-banner hidden" role="alert">
-        <div class="notice-banner-content">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
-            <path d="M12 9v4" />
-            <path d="M12 17h.01" />
-          </svg>
-          <div>
-            <strong>Откройте приложение внутри Telegram</strong>
-            <span class="notice-sub">
-              Не удалось получить <code>user_id</code> из <code>Telegram.WebApp.initDataUnsafe</code>. Запустите Mini App через кнопку «Меню» бота, чтобы сохранять списки в свой профиль.
-            </span>
-          </div>
-        </div>
+    <div class="flex items-center space-x-2">
+      <!-- Role Simulation Switcher -->
+      <div class="hidden sm:flex bg-slate-800/80 rounded-lg p-1 border border-slate-700 text-xs">
+        <button onclick="setSimulatedRole('owner')" id="role-btn-owner" class="px-2 py-1 rounded bg-indigo-600 text-white">Владелец</button>
+        <button onclick="setSimulatedRole('admin')" id="role-btn-admin" class="px-2 py-1 rounded text-slate-400">Админ</button>
+        <button onclick="setSimulatedRole('viewer')" id="role-btn-viewer" class="px-2 py-1 rounded text-slate-400">Зритель</button>
       </div>
 
-      <!-- Optional Supabase Setup Notice (only shown if placeholder keys are still present) -->
-      <div id="supabaseNotice" class="notice-banner notice-info hidden" role="status">
-        <div class="notice-banner-content">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 16v-4" />
-            <path d="M12 8h.01" />
-          </svg>
-          <div>
-            <strong>Локальный режим предпросмотра</strong>
-            <span class="notice-sub">
-              Задайте константы <code>SUPABASE_URL</code> и <code>SUPABASE_KEY</code> в начале скрипта, чтобы включить синхронизацию с таблицами <code>tracking</code> и <code>history</code>.
-            </span>
-          </div>
-        </div>
-        <button id="dismissSupabaseNotice" type="button" class="notice-close" aria-label="Скрыть уведомление о Supabase">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M18 6 6 18" />
-            <path d="m6 6 12 12" />
-          </svg>
-        </button>
-      </div>
+      <!-- Owner Access Modal Button -->
+      <button id="owner-access-btn" onclick="openAdminsModal()" class="hidden flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-violet-600/25 text-violet-300 border border-violet-500/30 text-xs font-medium hover:bg-violet-600/35 transition shadow-sm">
+        <i data-lucide="users" class="w-3.5 h-3.5"></i>
+        <span>👥 Доступы</span>
+      </button>
+    </div>
+  </header>
 
-      <!-- TAB 1: SEARCH -->
-      <section id="tab-search" aria-labelledby="heading-search">
-        <div class="view-header">
-          <h2 id="heading-search" class="view-title">Поиск аниме</h2>
-          <span id="searchMeta" class="view-meta">База Shikimori</span>
-        </div>
-
-        <form id="searchForm" class="search-form" role="search">
-          <div class="search-input-wrap">
-            <svg class="search-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.3-4.3" />
-            </svg>
+  <!-- Main Content Container -->
+  <main class="max-w-4xl w-full mx-auto px-4 py-6">
+    
+    <!-- TAB 1: SEARCH -->
+    <div id="tab-search" class="space-y-6">
+      <div class="bg-gradient-to-r from-indigo-900/40 via-purple-900/30 to-slate-900/40 border border-indigo-500/20 rounded-2xl p-6 shadow-xl">
+        <h2 class="text-xl font-bold text-white mb-2">Поиск аниме на Shikimori</h2>
+        <p class="text-sm text-slate-300 mb-4">Находите тайтлы, проверяйте даты релизов и добавляйте в отслеживаемые.</p>
+        
+        <form onsubmit="handleSearchSubmit(event)" class="flex gap-2">
+          <div class="relative flex-1">
+            <i data-lucide="search" class="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400"></i>
             <input
-              id="searchInput"
-              type="search"
-              class="search-input"
-              placeholder="Название аниме, например Frieren..."
-              aria-label="Название аниме для поиска"
-              autocomplete="off"
+              type="text"
+              id="search-input"
+              placeholder="Например: Клинок, Монах, Фрирен..."
+              class="w-full bg-slate-900/80 border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
             />
-            <button
-              id="clearSearchBtn"
-              type="button"
-              class="search-clear hidden"
-              aria-label="Очистить строку поиска"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M18 6 6 18" />
-                <path d="m6 6 12 12" />
-              </svg>
-            </button>
           </div>
-          <button id="searchSubmitBtn" type="submit" class="btn-primary">Найти</button>
+          <button
+            type="submit"
+            class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-3 rounded-xl font-medium text-sm transition flex items-center space-x-2 shadow-lg shadow-indigo-600/30"
+          >
+            <i data-lucide="search" class="w-4 h-4"></i>
+            <span>Найти</span>
+          </button>
         </form>
+      </div>
 
-        <div id="searchResults" class="cards-grid" aria-live="polite"></div>
-      </section>
-
-      <!-- TAB 2: TRACKING -->
-      <section id="tab-tracking" class="hidden" aria-labelledby="heading-tracking">
-        <div class="view-header">
-          <h2 id="heading-tracking" class="view-title">Отслеживаю</h2>
-          <span id="trackingCount" class="view-meta tabular-nums">0 тайтлов</span>
+      <!-- Search Results -->
+      <div id="search-results-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="text-center py-16 text-slate-500 col-span-full">
+          <i data-lucide="search" class="w-12 h-12 mx-auto mb-3 opacity-30"></i>
+          <p class="text-sm">Введите название аниме в поисковую строку выше</p>
         </div>
-        <div id="trackingList" class="cards-grid" aria-live="polite"></div>
-      </section>
+      </div>
+    </div>
 
-      <!-- TAB 3: CALENDAR -->
-      <section id="tab-calendar" class="hidden" aria-labelledby="heading-calendar">
-        <div class="view-header">
-          <h2 id="heading-calendar" class="view-title">Календарь</h2>
-          <span id="calSummaryMeta" class="view-meta tabular-nums">Релизы отслеживаемых тайтлов</span>
-        </div>
-
-        <div class="calendar-card">
-          <div class="calendar-toolbar">
-            <button
-              id="calPrevMonthBtn"
-              type="button"
-              class="cal-nav-btn"
-              aria-label="Предыдущий месяц"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="m15 18-6-6 6-6" />
-              </svg>
-            </button>
-            <div class="calendar-month-center">
-              <h3 id="calMonthLabel" class="calendar-month-label"></h3>
-              <button id="calTodayBtn" type="button" class="cal-today-btn">Сегодня</button>
-            </div>
-            <button
-              id="calNextMonthBtn"
-              type="button"
-              class="cal-nav-btn"
-              aria-label="Следующий месяц"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="m9 18 6-6-6-6" />
-              </svg>
-            </button>
-          </div>
-
-          <div class="calendar-weekdays" aria-hidden="true">
-            <div class="calendar-weekday">Пн</div>
-            <div class="calendar-weekday">Вт</div>
-            <div class="calendar-weekday">Ср</div>
-            <div class="calendar-weekday">Чт</div>
-            <div class="calendar-weekday">Пт</div>
-            <div class="calendar-weekday">Сб</div>
-            <div class="calendar-weekday">Вс</div>
-          </div>
-
-          <div id="calGrid" class="calendar-grid" role="grid" aria-label="Календарь выхода серий"></div>
+    <!-- TAB 2: TRACKING -->
+    <div id="tab-tracking" class="space-y-6 hidden">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-xl font-bold text-white">Отслеживаемые тайтлы</h2>
+          <p id="tracking-count-label" class="text-sm text-slate-400">Общий список команды озвучки (0)</p>
         </div>
 
-        <div class="calendar-day-header">
-          <h3 id="calSelectedDateTitle" class="calendar-day-title"></h3>
-          <span id="calSelectedDateCount" class="view-meta tabular-nums"></span>
+        <!-- Filter Chips -->
+        <div class="flex flex-wrap gap-1.5" id="tracking-filters">
+          <button onclick="setTrackingFilter('all')" data-filter="all" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-indigo-600 text-white shadow-md">Все</button>
+          <button onclick="setTrackingFilter('licensed')" data-filter="licensed" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-700">Лицензированы</button>
+          <button onclick="setTrackingFilter('unlicensed')" data-filter="unlicensed" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-700">Без лицензии</button>
+          <button onclick="setTrackingFilter('date_known')" data-filter="date_known" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-700">Дата известна</button>
+          <button onclick="setTrackingFilter('date_unknown')" data-filter="date_unknown" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-700">Дата неизвестна</button>
+          <button onclick="setTrackingFilter('ongoing')" data-filter="ongoing" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-700">Онгоинги</button>
+          <button onclick="setTrackingFilter('anons')" data-filter="anons" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-700">Анонсы</button>
         </div>
-        <div id="calDayReleases" class="cards-grid" aria-live="polite"></div>
-      </section>
+      </div>
 
-      <!-- TAB 4: HISTORY -->
-      <section id="tab-history" class="hidden" aria-labelledby="heading-history">
-        <div class="view-header">
-          <h2 id="heading-history" class="view-title">История</h2>
-          <span id="historyCount" class="view-meta tabular-nums">0 тайтлов</span>
+      <div id="tracking-list-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Rendered via JS -->
+      </div>
+    </div>
+
+    <!-- TAB 3: CALENDAR -->
+    <div id="tab-calendar" class="space-y-6 hidden">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-xl font-bold text-white">Календарь релизов</h2>
+          <p class="text-sm text-slate-400">Графики выхода серий и расписание озвучки команды</p>
         </div>
-        <div id="historyList" class="cards-grid" aria-live="polite"></div>
-      </section>
-    </main>
 
-    <!-- Bottom Tab Navigation -->
-    <nav class="bottom-nav" aria-label="Разделы приложения">
-      <div class="bottom-nav-inner" role="tablist">
-        <button
-          id="nav-search"
-          type="button"
-          class="tab-btn active"
-          role="tab"
-          aria-selected="true"
-          aria-controls="tab-search"
-          data-tab="search"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
-          <span>Поиск</span>
-        </button>
+        <div class="flex bg-slate-800 rounded-xl p-1 border border-slate-700">
+          <button onclick="setCalendarMode('general')" id="cal-mode-general" class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-medium bg-indigo-600 text-white shadow-md">Общий график</button>
+          <button onclick="setCalendarMode('dub')" id="cal-mode-dub" class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200">🎙 График озвучки</button>
+        </div>
+      </div>
 
-        <button
-          id="nav-tracking"
-          type="button"
-          class="tab-btn"
-          role="tab"
-          aria-selected="false"
-          aria-controls="tab-tracking"
-          data-tab="tracking"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-          </svg>
-          <span>Отслеживаю</span>
-        </button>
+      <div id="calendar-content-container" class="space-y-4">
+        <!-- Rendered via JS -->
+      </div>
+    </div>
 
-        <button
-          id="nav-calendar"
-          type="button"
-          class="tab-btn"
-          role="tab"
-          aria-selected="false"
-          aria-controls="tab-calendar"
-          data-tab="calendar"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect width="18" height="18" x="3" y="4" rx="2" />
-            <path d="M16 2v4" />
-            <path d="M8 2v4" />
-            <path d="M3 10h18" />
-          </svg>
-          <span>Календарь</span>
-        </button>
+    <!-- TAB 4: HISTORY -->
+    <div id="tab-history" class="space-y-6 hidden">
+      <div>
+        <h2 class="text-xl font-bold text-white">История просмотров</h2>
+        <p id="history-count-label" class="text-sm text-slate-400">Завершенные тайтлы и оценки команды (0)</p>
+      </div>
 
-        <button
-          id="nav-history"
-          type="button"
-          class="tab-btn"
-          role="tab"
-          aria-selected="false"
-          aria-controls="tab-history"
-          data-tab="history"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-            <path d="M3 3v5h5" />
-            <path d="M12 7v5l4 2" />
-          </svg>
-          <span>История</span>
+      <div id="history-list-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Rendered via JS -->
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODALS -->
+
+  <!-- Modal 1: Tracking Setup -->
+  <div id="modal-tracking" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-6">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold text-white">Настройка отслеживания</h3>
+        <button onclick="closeModal('modal-tracking')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <div id="modal-tracking-preview" class="flex items-center space-x-3 bg-slate-800/60 p-3 rounded-2xl border border-slate-700">
+        <!-- Preview info -->
+      </div>
+
+      <div class="space-y-3">
+        <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Типы уведомлений</label>
+        <label class="flex items-center space-x-3 cursor-pointer bg-slate-800/40 p-3 rounded-xl border border-slate-700/60 hover:bg-slate-800 transition">
+          <input type="checkbox" id="t-episodes" checked class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-slate-900 border-slate-700" />
+          <span class="text-sm text-slate-200">Выход новых серий</span>
+        </label>
+        <label class="flex items-center space-x-3 cursor-pointer bg-slate-800/40 p-3 rounded-xl border border-slate-700/60 hover:bg-slate-800 transition">
+          <input type="checkbox" id="t-status" checked class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-slate-900 border-slate-700" />
+          <span class="text-sm text-slate-200">Смена статуса аниме</span>
+        </label>
+        <label class="flex items-center space-x-3 cursor-pointer bg-slate-800/40 p-3 rounded-xl border border-slate-700/60 hover:bg-slate-800 transition">
+          <input type="checkbox" id="t-license" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-slate-900 border-slate-700" />
+          <span class="text-sm text-slate-200">Появление лицензии</span>
+        </label>
+        <label class="flex items-center space-x-3 cursor-pointer bg-slate-800/40 p-3 rounded-xl border border-slate-700/60 hover:bg-slate-800 transition">
+          <input type="checkbox" id="t-date" checked class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-slate-900 border-slate-700" />
+          <span class="text-sm text-slate-200">Появление даты 1 серии</span>
+        </label>
+      </div>
+
+      <div class="space-y-2">
+        <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Куда отправлять</label>
+        <select id="t-target" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500">
+          <option value="dm">Личные сообщения (DM)</option>
+          <option value="group">Группа команды</option>
+          <option value="both">И туда, и туда (Both)</option>
+        </select>
+      </div>
+
+      <div class="flex space-x-3 pt-2">
+        <button onclick="closeModal('modal-tracking')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl font-medium text-sm transition">Отмена</button>
+        <button onclick="saveTrackingFromModal()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-medium text-sm transition shadow-lg shadow-indigo-600/30">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Dub Schedule Setup -->
+  <div id="modal-dub" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold text-white">Расписание озвучки</h3>
+        <button onclick="closeModal('modal-dub')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs font-semibold text-slate-300 mb-1 block">Дата выхода 1 серии</label>
+          <input type="date" id="dub-date" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" />
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-300 mb-1 block">Всего серий</label>
+          <input type="number" id="dub-total-eps" value="12" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" />
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-300 mb-1 block">Актеры озвучки (@username)</label>
+          <input type="text" id="dub-actors" placeholder="@VoiceMaster, @AnyaVA" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" />
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-300 mb-1 block">Сабберы / Таймеры (@username)</label>
+          <input type="text" id="dub-subbers" placeholder="@SubZero" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" />
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-300 mb-1 block">Звукорежиссеры (@username)</label>
+          <input type="text" id="dub-sound" placeholder="@SoundGod" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" />
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-300 mb-1 block">Напоминать за (минут)</label>
+          <input type="number" id="dub-notify-min" value="30" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" />
+        </div>
+      </div>
+
+      <div class="flex space-x-3 pt-2">
+        <button onclick="closeModal('modal-dub')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl font-medium text-sm transition">Отмена</button>
+        <button onclick="saveDubScheduleFromModal()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-medium text-sm transition shadow-lg shadow-indigo-600/30">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: History Note & Rating -->
+  <div id="modal-history" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold text-white">Редактировать историю</h3>
+        <button onclick="closeModal('modal-history')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <div>
+        <label class="text-xs font-semibold text-slate-300 mb-1 block">Оценка (1 - 10)</label>
+        <input type="number" id="hist-rating" min="1" max="10" value="10" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" />
+      </div>
+
+      <div>
+        <label class="text-xs font-semibold text-slate-300 mb-1 block">Заметка</label>
+        <textarea id="hist-note" rows="3" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500"></textarea>
+      </div>
+
+      <div class="flex space-x-3 pt-2">
+        <button onclick="closeModal('modal-history')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl font-medium text-sm transition">Отмена</button>
+        <button onclick="saveHistoryFromModal()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-medium text-sm transition shadow-lg shadow-indigo-600/30">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 4: Admins Management (Owner Only) -->
+  <div id="modal-admins" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold text-white">👥 Управление доступами</h3>
+        <button onclick="closeModal('modal-admins')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <p class="text-xs text-slate-400">Добавьте помощника по @username или Telegram ID в таблицу team_admins.</p>
+
+      <div class="flex gap-2">
+        <input type="text" id="new-admin-input" placeholder="@username или ID" class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" />
+        <button onclick="addNewAdmin()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-3 rounded-xl font-medium text-sm transition flex items-center space-x-1 shadow-md">
+          <i data-lucide="user-plus" class="w-4 h-4"></i>
+          <span>Добавить</span>
         </button>
       </div>
-    </nav>
 
-    <!-- Tracking Settings Modal (Add / Edit) -->
-    <div
-      id="trackingModal"
-      class="modal-backdrop"
-      hidden
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="modalTitle"
-    >
-      <div class="modal-sheet">
-        <div class="sheet-handle" aria-hidden="true"></div>
+      <div id="admins-list-container" class="space-y-2 max-h-60 overflow-y-auto">
+        <!-- Rendered via JS -->
+      </div>
 
-        <div class="modal-head">
-          <div class="modal-anime-summary">
-            <div class="poster-frame" id="modalPosterWrap"></div>
-            <div style="min-width: 0">
-              <h3 id="modalTitle" class="modal-title"></h3>
-              <div id="modalSubtitle" class="meta-line tabular-nums"></div>
-              <div id="modalReleaseLine" class="modal-release-line tabular-nums"></div>
-            </div>
-          </div>
-          <button id="modalCloseBtn" type="button" class="modal-close" aria-label="Закрыть окно настроек">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M18 6 6 18" />
-              <path d="m6 6 12 12" />
-            </svg>
-          </button>
-        </div>
+      <button onclick="closeModal('modal-admins')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl font-medium text-sm transition">Закрыть</button>
+    </div>
+  </div>
 
-        <div id="modalDescriptionBox" class="modal-desc-box hidden"></div>
+  <!-- Bottom Navigation Bar -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-[#1e293b]/95 backdrop-blur-md border-t border-slate-800 px-4 py-2">
+    <div class="max-w-md mx-auto flex justify-around">
+      <button onclick="switchTab('search')" id="nav-search" class="flex flex-col items-center py-1.5 px-3 rounded-2xl transition text-indigo-400 bg-indigo-600/10">
+        <i data-lucide="search" class="w-5 h-5 stroke-[2.5]"></i>
+        <span class="text-[11px] font-medium mt-1">Поиск</span>
+      </button>
+      <button onclick="switchTab('tracking')" id="nav-tracking" class="flex flex-col items-center py-1.5 px-3 rounded-2xl transition text-slate-400 hover:text-slate-200">
+        <i data-lucide="bookmark" class="w-5 h-5 stroke-[1.75]"></i>
+        <span class="text-[11px] font-medium mt-1">Отслеживаю</span>
+      </button>
+      <button onclick="switchTab('calendar')" id="nav-calendar" class="flex flex-col items-center py-1.5 px-3 rounded-2xl transition text-slate-400 hover:text-slate-200">
+        <i data-lucide="calendar" class="w-5 h-5 stroke-[1.75]"></i>
+        <span class="text-[11px] font-medium mt-1">Календарь</span>
+      </button>
+      <button onclick="switchTab('history')" id="nav-history" class="flex flex-col items-center py-1.5 px-3 rounded-2xl transition text-slate-400 hover:text-slate-200">
+        <i data-lucide="trophy" class="w-5 h-5 stroke-[1.75]"></i>
+        <span class="text-[11px] font-medium mt-1">История</span>
+      </button>
+    </div>
+  </nav>
 
-        <form id="trackingForm">
-          <div class="form-section">
-            <span class="form-section-label">Просмотрено серий</span>
-            <div class="modal-episodes-row">
-              <span class="progress-label">
-                Серия <strong id="modalEpWatched">0</strong> из <strong id="modalEpTotal">?</strong>
-              </span>
-              <div class="stepper-group">
-                <button id="modalEpMinus" type="button" class="stepper-btn" aria-label="Уменьшить количество просмотренных серий">−</button>
-                <button id="modalEpPlus" type="button" class="stepper-btn" aria-label="Увеличить количество просмотренных серий">+</button>
+  <!-- Application Logic JS -->
+  <script>
+    // Constants & Supabase setup as requested
+    const SUPABASE_URL = 'https://supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_mM0RHaRg5JzcLCdBRFWTeg_rerDn153';
+    const OWNER_ID = 5947056777;
+
+    let supabaseClient = null;
+    try {
+      if (window.supabase && typeof window.supabase.createClient === 'function') {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      }
+    } catch (e) {
+      console.error("Supabase init error:", e);
+    }
+
+    // Month Names for smart date formatting
+    const MONTH_NAMES_RU = {
+      1: 'январь', 2: 'февраль', 3: 'март', 4: 'апрель',
+      5: 'май', 6: 'июнь', 7: 'июль', 8: 'август',
+      9: 'сентябрь', 10: 'октябрь', 11: 'ноябрь', 12: 'декабрь'
+    };
+    const MONTH_NAMES_GENITIVE_RU = {
+      1: 'января', 2: 'февраля', 3: 'марта', 4: 'апреля',
+      5: 'мая', 6: 'июня', 7: 'июля', 8: 'августа',
+      9: 'сентября', 10: 'октября', 11: 'ноября', 12: 'декабря'
+    };
+
+    // Smart date formatter as required by prompt
+    function getAnimeReleaseInfo(rawDate, status) {
+      if (!rawDate) {
+        return { text: 'Дата неизвестна', isExact: false };
+      }
+      const dateStr = String(rawDate);
+      const datePart = dateStr.slice(0, 10);
+      const parts = datePart.split('-');
+      if (parts.length < 3) {
+        return { text: 'Дата неизвестна', isExact: false };
+      }
+      const year = parts[0];
+      const monthNum = parseInt(parts[1], 10);
+      const day = parts[2];
+
+      if (day === '01' && (status === 'anons' || !dateStr.includes('T'))) {
+        const monthName = MONTH_NAMES_RU[monthNum] || 'месяц';
+        return { text: `Дата неизвестна (${monthName} ${year})`, isExact: false };
+      }
+
+      const monthGen = MONTH_NAMES_GENITIVE_RU[monthNum] || '';
+      let timeStr = '';
+      if (dateStr.includes('T')) {
+        const timePart = dateStr.split('T')[1];
+        if (timePart) {
+          timeStr = ' в ' + timePart.slice(0, 5);
+        }
+      }
+      const cleanDay = parseInt(day, 10);
+      return {
+        text: `${cleanDay} ${monthGen} ${year}${timeStr}`,
+        isExact: true
+      };
+    }
+
+    // Application State
+    let state = {
+      tgUser: null,
+      simulatedRole: 'owner', // owner, admin, viewer
+      isAdmin: true,
+      isOwner: true,
+      activeTab: 'search',
+      calendarMode: 'general',
+      filterTracking: 'all',
+      searchResults: [],
+      trackingList: [],
+      dubScheduleList: [],
+      historyList: [],
+      teamAdmins: [],
+      // Modals active targets
+      trackingModalAnime: null,
+      dubModalAnime: null,
+      historyModalItem: null
+    };
+
+    // Initialize Telegram WebApp
+    window.addEventListener('DOMContentLoaded', () => {
+      try {
+        if (window.Telegram?.WebApp) {
+          const twa = window.Telegram.WebApp;
+          twa.ready();
+          twa.expand();
+          if (twa.initDataUnsafe?.user) {
+            state.tgUser = twa.initDataUnsafe.user;
+          }
+        }
+      } catch (e) {
+        console.log("Telegram WebApp not found, running in browser mode");
+      }
+
+      loadData();
+      updateAuthUI();
+      renderCurrentTab();
+      lucide.createIcons();
+    });
+
+    // Load Data from Supabase / LocalStorage
+    async function loadData() {
+      if (supabaseClient) {
+        try {
+          const { data: tData } = await supabaseClient.from('tracking').select('*');
+          if (tData) state.trackingList = tData;
+
+          const { data: dData } = await supabaseClient.from('dub_schedule').select('*');
+          if (dData) state.dubScheduleList = dData;
+
+          const { data: hData } = await supabaseClient.from('history').select('*');
+          if (hData) state.historyList = hData;
+
+          const { data: aData } = await supabaseClient.from('team_admins').select('*');
+          if (aData) state.teamAdmins = aData;
+
+          updateAuthUI();
+          renderCurrentTab();
+          return;
+        } catch (e) {
+          console.warn("Supabase fetch failed, falling back to localStorage", e);
+        }
+      }
+
+      // LocalStorage fallback
+      const lt = localStorage.getItem('anisync_tracking');
+      if (lt) state.trackingList = JSON.parse(lt);
+      else {
+        state.trackingList = [
+          {
+            anime_id: 52991,
+            title: "Sousou no Frieren 2",
+            poster: "https://shikimori.io/system/animes/images/52991.jpg",
+            status: "ongoing",
+            episodes: 28,
+            episodes_aired: 14,
+            next_episode_at: "2026-11-28T15:00:00Z",
+            licensed_by: "Crunchyroll",
+            track_episodes: true,
+            track_status: true,
+            track_license: true,
+            track_date: true,
+            notify_target: "group",
+            watched_episodes: 12,
+            user_id: OWNER_ID
+          }
+        ];
+      }
+
+      const ld = localStorage.getItem('anisync_dub_schedule');
+      if (ld) state.dubScheduleList = JSON.parse(ld);
+      else {
+        state.dubScheduleList = [
+          {
+            anime_id: 52991,
+            title: "Sousou no Frieren 2",
+            poster: "https://shikimori.io/system/animes/images/52991.jpg",
+            first_ep_date: "2026-11-20",
+            total_episodes: 28,
+            actors: "@VoiceMaster, @AnyaVA",
+            subbers: "@SubZero",
+            sound_engineers: "@SoundGod",
+            notify_before_min: 30,
+            notify_target: "group"
+          }
+        ];
+      }
+
+      const lh = localStorage.getItem('anisync_history');
+      if (lh) state.historyList = JSON.parse(lh);
+
+      const la = localStorage.getItem('anisync_team_admins');
+      if (la) state.teamAdmins = JSON.parse(la);
+      else {
+        state.teamAdmins = [{ id: '1', tg_id: 123456789, username: 'helper_admin' }];
+      }
+
+      updateAuthUI();
+      renderCurrentTab();
+    }
+
+    function saveStorage(key, data) {
+      localStorage.setItem(`anisync_${key}`, JSON.stringify(data));
+    }
+
+    function setSimulatedRole(role) {
+      state.simulatedRole = role;
+      document.getElementById('role-btn-owner').className = `px-2 py-1 rounded ${role === 'owner' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`;
+      document.getElementById('role-btn-admin').className = `px-2 py-1 rounded ${role === 'admin' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`;
+      document.getElementById('role-btn-viewer').className = `px-2 py-1 rounded ${role === 'viewer' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`;
+      updateAuthUI();
+      renderCurrentTab();
+    }
+
+    function updateAuthUI() {
+      const userId = state.tgUser?.id || (state.simulatedRole === 'owner' ? OWNER_ID : state.simulatedRole === 'admin' ? 123456789 : 999999999);
+      const username = state.tgUser?.username?.toLowerCase() || (state.simulatedRole === 'owner' ? 'owner' : state.simulatedRole === 'admin' ? 'helper_admin' : 'viewer');
+
+      state.isOwner = userId === OWNER_ID || state.simulatedRole === 'owner';
+      state.isAdmin = state.isOwner || state.simulatedRole === 'admin' || state.teamAdmins.some(a => String(a.tg_id) === String(userId) || (a.username && a.username.toLowerCase() === username));
+
+      const roleLabel = document.getElementById('user-role-label');
+      const ownerBtn = document.getElementById('owner-access-btn');
+
+      if (state.isOwner) {
+        roleLabel.innerText = '👑 Владелец';
+        ownerBtn.classList.remove('hidden');
+      } else if (state.isAdmin) {
+        roleLabel.innerText = '🛡 Админ команды';
+        ownerBtn.classList.add('hidden');
+      } else {
+        roleLabel.innerText = '👁 Режим чтения';
+        ownerBtn.classList.add('hidden');
+      }
+    }
+
+    // Switch Tabs
+    function switchTab(tabId) {
+      state.activeTab = tabId;
+      ['search', 'tracking', 'calendar', 'history'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.add('hidden');
+        const navBtn = document.getElementById(`nav-${t}`);
+        navBtn.className = "flex flex-col items-center py-1.5 px-3 rounded-2xl transition text-slate-400 hover:text-slate-200";
+        navBtn.querySelector('i').className = "w-5 h-5 stroke-[1.75]";
+      });
+
+      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+      const activeNav = document.getElementById(`nav-${tabId}`);
+      activeNav.className = "flex flex-col items-center py-1.5 px-3 rounded-2xl transition text-indigo-400 bg-indigo-600/10";
+      activeNav.querySelector('i').className = "w-5 h-5 stroke-[2.5]";
+
+      renderCurrentTab();
+      lucide.createIcons();
+    }
+
+    function renderCurrentTab() {
+      if (state.activeTab === 'search') renderSearch();
+      else if (state.activeTab === 'tracking') renderTracking();
+      else if (state.activeTab === 'calendar') renderCalendar();
+      else if (state.activeTab === 'history') renderHistory();
+      lucide.createIcons();
+    }
+
+    // Poster helper
+    function getPosterUrl(imageObj) {
+      if (!imageObj) return 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&auto=format&fit=crop&q=80';
+      const path = imageObj.original || imageObj.preview || imageObj.x96;
+      if (!path) return 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&auto=format&fit=crop&q=80';
+      if (path.startsWith('/')) return `https://shikimori.io${path}`;
+      return path;
+    }
+
+    // Shikimori Search Request (WITHOUT User-Agent)
+    async function handleSearchSubmit(e) {
+      if (e) e.preventDefault();
+      const query = document.getElementById('search-input').value.trim();
+      if (!query) return;
+
+      const container = document.getElementById('search-results-container');
+      container.innerHTML = `<div class="text-center py-12 text-slate-400 col-span-full">Поиск...</div>`;
+
+      try {
+        const res = await fetch(`https://shikimori.io/api/animes?search=${encodeURIComponent(query)}&limit=20`, {
+          headers: { 'Accept': 'application/json' }
+        });
+        if (res.ok) {
+          state.searchResults = await res.json();
+          renderSearch();
+        }
+      } catch (err) {
+        console.error("Search error:", err);
+        container.innerHTML = `<div class="text-center py-12 text-rose-400 col-span-full">Ошибка запроса к Shikimori API</div>`;
+      }
+    }
+
+    function renderSearch() {
+      const container = document.getElementById('search-results-container');
+      if (state.searchResults.length === 0) return;
+
+      container.innerHTML = state.searchResults.map(anime => {
+        const releaseInfo = getAnimeReleaseInfo(anime.next_episode_at || anime.aired_on, anime.status);
+        const posterUrl = getPosterUrl(anime.image);
+        const isTracked = state.trackingList.some(t => t.anime_id === anime.id);
+
+        return `
+          <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 flex space-x-4 shadow-md">
+            <img src="${posterUrl}" alt="" class="w-24 h-36 object-cover rounded-xl shadow-md shrink-0 bg-slate-900" />
+            <div class="flex-1 flex flex-col justify-between min-w-0">
+              <div>
+                <div class="flex items-start justify-between gap-2">
+                  <h3 class="font-semibold text-sm text-white line-clamp-2">${anime.russian || anime.name}</h3>
+                  ${anime.score ? `<span class="flex items-center space-x-0.5 text-xs font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md shrink-0"><i data-lucide="star" class="w-3 h-3 fill-amber-400"></i><span>${anime.score}</span></span>` : ''}
+                </div>
+                <p class="text-xs text-slate-400 mt-1 capitalize">${anime.kind} • ${anime.episodes || '?'} сер.</p>
+                <div class="mt-2 flex items-center space-x-1.5 text-xs text-slate-300">
+                  <i data-lucide="clock" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
+                  <span class="line-clamp-1">${releaseInfo.text}</span>
+                </div>
+              </div>
+              <div class="pt-3 flex items-center justify-between">
+                <span class="text-[10px] px-2 py-0.5 rounded-full uppercase font-bold ${anime.status === 'ongoing' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-700 text-slate-300'}">${anime.status}</span>
+                ${state.isAdmin ? `
+                  <button onclick='openTrackingModal(${JSON.stringify(anime).replace(/'/g, "&#39;")})' class="px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center space-x-1 ${isTracked ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/30' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md'}">
+                    <i data-lucide="${isTracked ? 'check' : 'plus'}" class="w-3.5 h-3.5"></i>
+                    <span>${isTracked ? 'Отслеживается' : '+ Отслеживать'}</span>
+                  </button>
+                ` : ''}
               </div>
             </div>
           </div>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
 
-          <div class="form-section">
-            <span class="form-section-label">Уведомлять о событиях</span>
-            <div class="checkbox-list">
-              <label class="checkbox-item" for="chkTrackEpisodes">
-                <span class="checkbox-text">
-                  <span class="checkbox-title">Выход серий</span>
-                  <span class="checkbox-desc">Напоминания о новых сериях онгоинга</span>
-                </span>
-                <input id="chkTrackEpisodes" type="checkbox" checked />
-              </label>
-
-              <label class="checkbox-item" for="chkTrackStatus">
-                <span class="checkbox-text">
-                  <span class="checkbox-title">Смена статуса</span>
-                  <span class="checkbox-desc">Переход из анонса в онгоинг или завершён</span>
-                </span>
-                <input id="chkTrackStatus" type="checkbox" checked />
-              </label>
-
-              <label class="checkbox-item" for="chkTrackLicense">
-                <span class="checkbox-text">
-                  <span class="checkbox-title">Появление лицензии</span>
-                  <span class="checkbox-desc">Когда тайтл лицензируют в регионе</span>
-                </span>
-                <input id="chkTrackLicense" type="checkbox" />
-              </label>
-
-              <label class="checkbox-item" for="chkDate">
-                <span class="checkbox-text">
-                  <span class="checkbox-title">Появление даты выхода 1 серии</span>
-                  <span class="checkbox-desc">Уведомление при объявлении даты старта аниме</span>
-                </span>
-                <input type="checkbox" id="chkDate" checked />
-              </label>
-            </div>
-          </div>
-
-          <div class="form-section">
-            <span class="form-section-label">Куда отправлять уведомления</span>
-            <div class="segmented-control" role="radiogroup" aria-label="Место уведомлений">
-              <button type="button" class="segmented-btn active" data-target="dm" aria-checked="true">Личка</button>
-              <button type="button" class="segmented-btn" data-target="group" aria-checked="false">Группа</button>
-              <button type="button" class="segmented-btn" data-target="both" aria-checked="false">Везде</button>
-            </div>
-          </div>
-
-          <div class="modal-actions">
-            <button id="modalCancelBtn" type="button" class="btn-secondary">Отмена</button>
-            <button id="modalSaveBtn" type="submit" class="btn-primary">Сохранить</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Move to History Modal (Rate 1–10 + Note) -->
-    <div
-      id="moveHistoryModal"
-      class="modal-backdrop"
-      hidden
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="moveHistoryTitle"
-    >
-      <div class="modal-sheet">
-        <div class="sheet-handle" aria-hidden="true"></div>
-        <div class="modal-head">
-          <div>
-            <h3 id="moveHistoryTitle" class="modal-title">Перенести в историю</h3>
-            <div id="moveHistorySubtitle" class="meta-line"></div>
-          </div>
-          <button id="moveHistoryCloseBtn" type="button" class="modal-close" aria-label="Закрыть окно переноса в историю">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M18 6 6 18" />
-              <path d="m6 6 12 12" />
-            </svg>
-          </button>
+    // Tracking Setup Modal
+    function openTrackingModal(anime) {
+      state.trackingModalAnime = anime;
+      document.getElementById('modal-tracking-preview').innerHTML = `
+        <img src="${getPosterUrl(anime.image)}" alt="" class="w-12 h-16 object-cover rounded-lg" />
+        <div>
+          <h4 class="font-semibold text-sm text-white line-clamp-1">${anime.russian || anime.name}</h4>
+          <p class="text-xs text-slate-400 capitalize">${anime.kind} • ${anime.episodes || '?'} сер.</p>
         </div>
+      `;
+      document.getElementById('modal-tracking').classList.remove('hidden');
+    }
 
-        <form id="moveHistoryForm">
-          <div class="form-section">
-            <span class="form-section-label">Ваша оценка (1–10)</span>
-            <div id="moveScoreGrid" class="score-grid" role="radiogroup" aria-label="Оценка от 1 до 10"></div>
-          </div>
+    async function saveTrackingFromModal() {
+      const anime = state.trackingModalAnime;
+      if (!anime) return;
+      const currentUserId = state.tgUser?.id || OWNER_ID;
 
-          <div class="form-section">
-            <label class="form-section-label" for="moveNoteInput">Заметка</label>
-            <textarea
-              id="moveNoteInput"
-              class="note-textarea"
-              placeholder="Впечатления от просмотра, любимая арка..."
-            ></textarea>
-          </div>
+      const newItem = {
+        user_id: currentUserId,
+        anime_id: anime.id,
+        title: anime.russian || anime.name,
+        poster: getPosterUrl(anime.image),
+        status: anime.status,
+        episodes: anime.episodes || 12,
+        episodes_aired: anime.episodes_aired || 0,
+        next_episode_at: anime.next_episode_at || null,
+        licensed_by: anime.licenseName || 'Не указано',
+        track_episodes: document.getElementById('t-episodes').checked,
+        track_status: document.getElementById('t-status').checked,
+        track_license: document.getElementById('t-license').checked,
+        track_date: document.getElementById('t-date').checked,
+        notify_target: document.getElementById('t-target').value,
+        watched_episodes: 0
+      };
 
-          <div class="modal-actions">
-            <button id="moveCancelBtn" type="button" class="btn-secondary">Отмена</button>
-            <button id="moveConfirmBtn" type="submit" class="btn-primary">В историю</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Technical Error Popup Modal (shows real Supabase error.message) -->
-    <div
-      id="errorModal"
-      class="modal-backdrop"
-      hidden
-      role="alertdialog"
-      aria-modal="true"
-      aria-labelledby="errorModalTitle"
-      aria-describedby="errorModalMessage"
-    >
-      <div class="modal-sheet">
-        <div class="sheet-handle" aria-hidden="true"></div>
-        <div class="modal-head">
-          <div>
-            <h3 id="errorModalTitle" class="modal-title">Ошибка базы данных</h3>
-            <div class="meta-line">Технический ответ Supabase</div>
-          </div>
-          <button id="errorModalCloseBtn" type="button" class="modal-close" aria-label="Закрыть окно ошибки">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M18 6 6 18" />
-              <path d="m6 6 12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <div id="errorModalMessage" class="error-message-box"></div>
-        <p class="error-hint-text">
-          Проверьте <code>SUPABASE_URL</code>, <code>SUPABASE_KEY</code>, названия колонок таблиц <code>tracking</code> / <code>history</code> и политики RLS в Supabase.
-        </p>
-
-        <div class="modal-actions">
-          <button id="errorModalOkBtn" type="button" class="btn-primary">Понятно</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Toast -->
-    <div class="toast-wrap" aria-live="polite">
-      <div id="toastMsg" class="toast-msg"></div>
-    </div>
-
-    <script>
-      // =========================================================================
-      // КОНФИГУРАЦИЯ SUPABASE
-      // Строгая схема таблиц:
-      //   tracking: user_id, anime_id, title, poster, status, episodes,
-      //     episodes_aired, next_episode_at, licensed_by, track_episodes,
-      //     track_status, track_license, track_date, notify_target, watched_episodes
-      //   history: user_id, anime_id, title, poster, rating, note, finished_at
-      // =========================================================================
-      const SUPABASE_URL = 'https://ztdddyjdzrjybwwjmksv.supabase.co';
-      const SUPABASE_KEY = 'sb_publishable_mM0RHaRg5JzcLCdBRFWTeg_rerDn153';
-
-      const SHIKIMORI_API_BASE = 'https://shikimori.io';
-      const SHIKIMORI_MIRROR_BASE = 'https://shikimori.io';
-
-      // =========================================================================
-      // ЧИСТЫЕ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (Форматирование, URL, валидация, схемы)
-      // =========================================================================
-      function isSupabaseConfigured(url, key) {
-        return Boolean(
-          url &&
-            key &&
-            !url.includes('YOUR_PROJECT_ID') &&
-            !key.includes('YOUR_SUPABASE_ANON_KEY') &&
-            !key.includes('ВСТАВЬ_СЮДА') &&
-            url.startsWith('https://')
-        );
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('tracking').upsert(newItem, { onConflict: 'user_id,anime_id' });
+        } catch (e) { console.warn(e); }
       }
 
-      function getPosterUrl(anime) {
-        if (!anime) return '';
-        let raw = '';
-        if (typeof anime === 'string') {
-          raw = anime.trim();
-        } else if (anime.image && typeof anime.image === 'object') {
-          raw = String(
-            anime.image.original ||
-              anime.image.main ||
-              anime.image.preview ||
-              anime.image.x96 ||
-              ''
-          ).trim();
-        } else if (typeof anime.image === 'string') {
-          raw = anime.image.trim();
+      const idx = state.trackingList.findIndex(t => t.anime_id === anime.id && t.user_id === currentUserId);
+      if (idx >= 0) state.trackingList[idx] = { ...state.trackingList[idx], ...newItem };
+      else state.trackingList.unshift(newItem);
+
+      saveStorage('tracking', state.trackingList);
+      closeModal('modal-tracking');
+      renderCurrentTab();
+    }
+
+    function setTrackingFilter(filterId) {
+      state.filterTracking = filterId;
+      document.querySelectorAll('#tracking-filters button').forEach(btn => {
+        if (btn.getAttribute('data-filter') === filterId) {
+          btn.className = "px-3 py-1.5 rounded-xl text-xs font-medium bg-indigo-600 text-white shadow-md";
         } else {
-          raw = String(
-            anime.original || anime.main || anime.preview || anime.x96 || anime.poster || ''
-          ).trim();
+          btn.className = "px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-700";
         }
-        if (!raw || raw.includes('missing_')) return '';
-        if (raw.startsWith('/')) {
-          return `${SHIKIMORI_MIRROR_BASE}${raw}`;
-        }
-        if (raw.startsWith('http://') || raw.startsWith('https://')) {
-          return raw.replace(/^https?:\/\/shikimori\.one(?=\/|$)/i, 'https://shikimori.io');
-        }
-        return `${SHIKIMORI_MIRROR_BASE}/${raw}`;
-      }
-
-      function resolvePosterUrl(imageObj) {
-        return getPosterUrl(imageObj);
-      }
-
-      function getPosterPlaceholderPalette(title) {
-        const palettes = [
-          { bg: '#e3effc', fg: '#184b85' },
-          { bg: '#e6f5ed', fg: '#16603b' },
-          { bg: '#fef0e1', fg: '#8f470c' },
-          { bg: '#ede9fe', fg: '#4c349e' },
-          { bg: '#fce8ef', fg: '#96224b' },
-          { bg: '#e2f4f6', fg: '#145f69' },
-        ];
-        const str = String(title || 'Anime');
-        let hash = 0;
-        for (let i = 0; i < str.length; i += 1) {
-          hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
-        }
-        return palettes[hash % palettes.length];
-      }
-
-      function formatFetchError(err) {
-        if (!err) return 'Неизвестная ошибка сети';
-        if (typeof err === 'string') return err;
-        const name = err.name && err.name !== 'Error' ? `${err.name}: ` : '';
-        const message = err.message ? String(err.message) : String(err);
-        return `${name}${message}`.trim() || 'Неизвестная ошибка запроса';
-      }
-
-      function formatSupabaseError(err) {
-        if (!err) return 'Неизвестная ошибка Supabase';
-        if (typeof err === 'string') return err;
-        const parts = [];
-        if (err.message) parts.push(String(err.message));
-        if (err.code) parts.push(`code: ${err.code}`);
-        if (err.details) parts.push(`details: ${err.details}`);
-        if (err.hint) parts.push(`hint: ${err.hint}`);
-        if (parts.length > 0) return parts.join('\n');
-        try {
-          return JSON.stringify(err);
-        } catch {
-          return String(err);
-        }
-      }
-
-      function normalizeNotifyTarget(target) {
-        const val = String(target || '').trim().toLowerCase();
-        if (val === 'dm' || val === 'личка') return 'dm';
-        if (val === 'group' || val === 'группа') return 'group';
-        if (val === 'both' || val === 'везде') return 'both';
-        return 'dm';
-      }
-
-      function formatNotifyTarget(target) {
-        const normalized = normalizeNotifyTarget(target);
-        if (normalized === 'group') return 'группа';
-        if (normalized === 'both') return 'везде';
-        return 'личка';
-      }
-
-      function buildTrackingPayload({
-        userId,
-        animeId,
-        title,
-        poster,
-        status,
-        episodes,
-        episodesAired,
-        nextEpisodeAt,
-        licensedBy,
-        trackEpisodes,
-        trackStatus,
-        trackLicense,
-        trackDate,
-        notifyTarget,
-        watchedEpisodes,
-      }) {
-        return {
-          user_id: Number(userId),
-          anime_id: Number(animeId),
-          title: String(title || 'Без названия'),
-          poster: String(poster || ''),
-          status: String(status || 'ongoing'),
-          episodes: Math.max(0, Number(episodes) || 0),
-          episodes_aired: Math.max(0, Number(episodesAired) || 0),
-          next_episode_at: nextEpisodeAt ? String(nextEpisodeAt) : null,
-          licensed_by: String(licensedBy || ''),
-          track_episodes: Boolean(trackEpisodes),
-          track_status: Boolean(trackStatus),
-          track_license: Boolean(trackLicense),
-          track_date: Boolean(trackDate),
-          notify_target: normalizeNotifyTarget(notifyTarget),
-          watched_episodes: Math.max(0, Number(watchedEpisodes) || 0),
-        };
-      }
-
-      function buildHistoryPayload({ userId, animeId, title, poster, rating, note, finishedAt }) {
-        return {
-          user_id: Number(userId),
-          anime_id: Number(animeId),
-          title: String(title || 'Без названия'),
-          poster: String(poster || ''),
-          rating: normalizeScore(rating) ?? 8,
-          note: String(note || ''),
-          finished_at: finishedAt ? String(finishedAt) : new Date().toISOString(),
-        };
-      }
-
-      function formatAnimeKind(kind) {
-        const map = {
-          tv: 'TV',
-          movie: 'Фильм',
-          ova: 'OVA',
-          ona: 'ONA',
-          special: 'Спешл',
-          tv_special: 'TV Спешл',
-          music: 'Клип',
-        };
-        return map[kind] || (kind ? String(kind).toUpperCase() : 'Аниме');
-      }
-
-      function formatAnimeStatus(status) {
-        const map = {
-          anons: 'Анонс',
-          ongoing: 'Онгоинг',
-          released: 'Вышел',
-        };
-        return map[status] || status || 'Неизвестно';
-      }
-
-      function extractReleaseYear(anime) {
-        if (!anime) return '';
-        const candidates = [anime.aired_on, anime.released_on, anime.next_episode_at];
-        for (const val of candidates) {
-          if (!val) continue;
-          const match = /^(\d{4})/.exec(String(val).trim());
-          if (match) return match[1];
-        }
-        return '';
-      }
-
-      const SHIKI_MONTHS_NOMINATIVE = [
-        'январь',
-        'февраль',
-        'март',
-        'апрель',
-        'май',
-        'июнь',
-        'июль',
-        'август',
-        'сентябрь',
-        'октябрь',
-        'ноябрь',
-        'декабрь',
-      ];
-
-      const SHIKI_MONTHS_GENITIVE = [
-        'января',
-        'февраля',
-        'марта',
-        'апреля',
-        'мая',
-        'июня',
-        'июля',
-        'августа',
-        'сентября',
-        'октября',
-        'ноября',
-        'декабря',
-      ];
-
-      const SHIKI_MONTHS_SHORT = [
-        'янв.',
-        'февр.',
-        'мар.',
-        'апр.',
-        'мая',
-        'июн.',
-        'июл.',
-        'авг.',
-        'сент.',
-        'окт.',
-        'нояб.',
-        'дек.',
-      ];
-
-      function getAnimeReleaseInfo(rawDate, status = null) {
-        const emptyResult = {
-          text: 'Дата неизвестна',
-          isExact: false,
-          year: null,
-          monthIndex: null,
-          day: null,
-          dateKey: null,
-          hasTime: false,
-          timeLabel: '',
-        };
-
-        if (!rawDate) return emptyResult;
-        const rawStr = String(rawDate).trim();
-        if (!rawStr) return emptyResult;
-
-        const datePart = rawStr.slice(0, 10);
-        const [year = '', month = '', day = ''] = datePart.split('-');
-        const months = SHIKI_MONTHS_NOMINATIVE;
-
-        if (/^\d{4}$/.test(year) && /^\d{2}$/.test(month) && /^\d{2}$/.test(day)) {
-          const monthIndex = parseInt(month, 10) - 1;
-          const yearNum = parseInt(year, 10);
-          const dayNum = parseInt(day, 10);
-          const monthNom = months[monthIndex];
-          const monthGen = SHIKI_MONTHS_GENITIVE[monthIndex];
-
-          if (monthNom && monthGen && dayNum >= 1 && dayNum <= 31) {
-            // Главное правило: 1-е число при status === 'anons' ИЛИ без времени ('T') -> приблизительная дата
-            if (day === '01' && (status === 'anons' || !rawStr.includes('T'))) {
-              return {
-                text: 'Дата неизвестна (' + monthNom + ' ' + year + ')',
-                isExact: false,
-                year: yearNum,
-                monthIndex,
-                day: dayNum,
-                dateKey: null,
-                hasTime: false,
-                timeLabel: '',
-              };
-            }
-
-            if (rawStr.includes('T')) {
-              const dt = new Date(rawStr);
-              if (!Number.isNaN(dt.getTime())) {
-                const dtYear = dt.getFullYear();
-                const dtMonthIndex = dt.getMonth();
-                const dtDay = dt.getDate();
-                const hours = String(dt.getHours()).padStart(2, '0');
-                const minutes = String(dt.getMinutes()).padStart(2, '0');
-                const timeLabel = `${hours}:${minutes}`;
-                const monthShort = SHIKI_MONTHS_SHORT[dtMonthIndex] || SHIKI_MONTHS_GENITIVE[dtMonthIndex] || '';
-                return {
-                  text: `${dtDay} ${monthShort} ${dtYear}, ${timeLabel}`,
-                  isExact: true,
-                  year: dtYear,
-                  monthIndex: dtMonthIndex,
-                  day: dtDay,
-                  dateKey: formatLocalDateKey(dtYear, dtMonthIndex, dtDay),
-                  hasTime: true,
-                  timeLabel,
-                };
-              }
-            }
-
-            const checkDate = new Date(yearNum, monthIndex, dayNum);
-            const isValidCalendarDay =
-              checkDate.getFullYear() === yearNum &&
-              checkDate.getMonth() === monthIndex &&
-              checkDate.getDate() === dayNum;
-
-            if (isValidCalendarDay) {
-              return {
-                text: `${dayNum} ${monthGen} ${year}`,
-                isExact: true,
-                year: yearNum,
-                monthIndex,
-                day: dayNum,
-                dateKey: formatLocalDateKey(yearNum, monthIndex, dayNum),
-                hasTime: false,
-                timeLabel: 'Дата старта',
-              };
-            }
-          }
-        }
-
-        if (/^\d{4}$/.test(year) && /^\d{2}$/.test(month)) {
-          const monthIndex = parseInt(month, 10) - 1;
-          const monthNom = months[monthIndex];
-          if (monthNom) {
-            return {
-              text: 'Дата неизвестна (' + monthNom + ' ' + year + ')',
-              isExact: false,
-              year: parseInt(year, 10),
-              monthIndex,
-              day: null,
-              dateKey: null,
-              hasTime: false,
-              timeLabel: '',
-            };
-          }
-        }
-
-        if (/^\d{4}$/.test(year)) {
-          return {
-            text: 'Дата неизвестна (' + year + ')',
-            isExact: false,
-            year: parseInt(year, 10),
-            monthIndex: null,
-            day: null,
-            dateKey: null,
-            hasTime: false,
-            timeLabel: '',
-          };
-        }
-
-        return emptyResult;
-      }
-
-      function formatReleaseDate(animeOrIso) {
-        if (!animeOrIso) return 'Дата неизвестна';
-        if (typeof animeOrIso === 'string') {
-          return getAnimeReleaseInfo(animeOrIso, null).text;
-        }
-        const rawDate = animeOrIso.next_episode_at || animeOrIso.aired_on || animeOrIso.released_on || null;
-        return getAnimeReleaseInfo(rawDate, animeOrIso.status || null).text;
-      }
-
-      function formatNextEpisode(isoString, status) {
-        if (isoString) {
-          return getAnimeReleaseInfo(isoString, status).text;
-        }
-        if (status === 'released') return 'Сезон завершён';
-        return 'Дата неизвестна';
-      }
-
-      function stripHtmlTags(raw) {
-        if (!raw) return '';
-        return String(raw)
-          .replace(/<br\s*\/?>/gi, '\n')
-          .replace(/<\/p>/gi, '\n')
-          .replace(/<[^>]*>/g, '')
-          .replace(/\[(?:character|anime|manga|person|url|b|i|u|s|spoiler|quote)[^\]]*\]/gi, '')
-          .replace(/\[\/(?:character|anime|manga|person|url|b|i|u|s|spoiler|quote)\]/gi, '')
-          .replace(/&nbsp;/gi, ' ')
-          .replace(/&quot;/gi, '"')
-          .replace(/&#39;/gi, "'")
-          .replace(/&lt;/gi, '<')
-          .replace(/&gt;/gi, '>')
-          .replace(/&amp;/gi, '&')
-          .replace(/\n{3,}/g, '\n\n')
-          .trim();
-      }
-
-      function extractLicenseText(detail) {
-        if (!detail) return '';
-        if (Array.isArray(detail.licensors) && detail.licensors.length > 0) {
-          return detail.licensors.join(', ');
-        }
-        if (detail.license_name_ru) {
-          return String(detail.license_name_ru);
-        }
-        return '';
-      }
-
-      function formatTrackingFlags(item) {
-        const flags = [];
-        if (item.track_episodes) flags.push('серии');
-        if (item.track_status) flags.push('статус');
-        if (item.track_license) flags.push('лицензия');
-        if (item.track_date) flags.push('дата старта');
-        return flags.length ? flags.join(', ') : 'без уведомлений';
-      }
-
-      function calculateProgressPercent(watched, total) {
-        const w = Math.max(0, Number(watched) || 0);
-        const t = Number(total) || 0;
-        if (t <= 0) return w > 0 ? 100 : 0;
-        return Math.min(100, Math.round((w / t) * 100));
-      }
-
-      function normalizeScore(score) {
-        if (score === null || score === undefined || score === '') return null;
-        const num = Number(score);
-        if (!Number.isFinite(num)) return null;
-        return Math.min(10, Math.max(1, Math.round(num)));
-      }
-
-      function escapeHtml(str) {
-        return String(str ?? '')
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#39;');
-      }
-
-      function formatLocalDateKey(year, monthIndex, day) {
-        const m = String(monthIndex + 1).padStart(2, '0');
-        const d = String(day).padStart(2, '0');
-        return `${year}-${m}-${d}`;
-      }
-
-      function parseExactReleaseDate(rawValue, status = null) {
-        const parsed = getAnimeReleaseInfo(rawValue, status);
-        if (!parsed.isExact) return null;
-        return parsed;
-      }
-
-      function buildCalendarEventsForMonth(trackingItems, viewYear, viewMonthIndex) {
-        const eventsByDate = {};
-        let totalEventsCount = 0;
-        let firstReleaseDateKey = null;
-
-        const monthStart = new Date(viewYear, viewMonthIndex, 1);
-        const monthEnd = new Date(viewYear, viewMonthIndex + 1, 0);
-
-        (Array.isArray(trackingItems) ? trackingItems : []).forEach((item) => {
-          const parsed = getAnimeReleaseInfo(item.next_episode_at, item.status);
-          if (!parsed.isExact) return;
-
-          const totalEpisodes = Math.max(0, Number(item.episodes) || 0);
-          const airedEpisodes = Math.max(0, Number(item.episodes_aired) || 0);
-          const isWeeklyOngoing = item.status === 'ongoing' && parsed.hasTime;
-
-          let maxOccurrences = 1;
-          if (isWeeklyOngoing) {
-            maxOccurrences = totalEpisodes > 0 ? Math.max(1, totalEpisodes - airedEpisodes) : 26;
-          }
-
-          for (let step = 0; step < maxOccurrences; step += 1) {
-            const occDate = new Date(parsed.year, parsed.monthIndex, parsed.day + step * 7);
-            if (occDate > monthEnd) break;
-            if (occDate < monthStart) continue;
-
-            const dateKey = formatLocalDateKey(
-              occDate.getFullYear(),
-              occDate.getMonth(),
-              occDate.getDate()
-            );
-            if (!eventsByDate[dateKey]) {
-              eventsByDate[dateKey] = [];
-            }
-
-            const episodeNumber = isWeeklyOngoing
-              ? airedEpisodes + 1 + step
-              : item.status === 'anons'
-                ? 1
-                : null;
-
-            eventsByDate[dateKey].push({
-              dateKey,
-              animeId: item.anime_id,
-              title: item.title || 'Без названия',
-              poster: getPosterUrl(item.poster),
-              timeLabel: parsed.hasTime ? parsed.timeLabel : 'Дата старта',
-              hasTime: parsed.hasTime,
-              episodeNumber,
-              totalEpisodes,
-              status: item.status || 'ongoing',
-              isProjected: step > 0,
-            });
-            totalEventsCount += 1;
-            if (!firstReleaseDateKey || dateKey < firstReleaseDateKey) {
-              firstReleaseDateKey = dateKey;
-            }
-          }
-        });
-
-        Object.keys(eventsByDate).forEach((dateKey) => {
-          eventsByDate[dateKey].sort((a, b) => {
-            if (a.hasTime !== b.hasTime) return a.hasTime ? -1 : 1;
-            if (a.timeLabel !== b.timeLabel) return a.timeLabel.localeCompare(b.timeLabel);
-            return a.title.localeCompare(b.title, 'ru');
-          });
-        });
-
-        return { eventsByDate, totalEventsCount, firstReleaseDateKey };
-      }
-
-      function formatCalendarMonthTitle(year, monthIndex) {
-        const dt = new Date(year, monthIndex, 1);
-        try {
-          return new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' })
-            .format(dt)
-            .replace(/\s*г\.$/, '');
-        } catch {
-          return `${monthIndex + 1}.${year}`;
-        }
-      }
-
-      function formatCalendarDayHeading(dateKey) {
-        const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateKey || ''));
-        if (!match) return 'Выберите день';
-        const dt = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-        try {
-          return new Intl.DateTimeFormat('ru-RU', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-          })
-            .format(dt)
-            .replace(/\s*г\.$/, '');
-        } catch {
-          return `${match[3]}.${match[2]}.${match[1]}`;
-        }
-      }
-
-      // =========================================================================
-      // ИНИЦИАЛИЗАЦИЯ TELEGRAM MINI APP И ТЕМЫ
-      // =========================================================================
-      const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-
-      function applyTelegramTheme(webApp) {
-        const root = document.documentElement;
-        const tp = (webApp && webApp.themeParams) || {};
-        const isDark =
-          (webApp && webApp.colorScheme === 'dark') ||
-          (!webApp?.colorScheme &&
-            window.matchMedia &&
-            window.matchMedia('(prefers-color-scheme: dark)').matches);
-
-        root.classList.toggle('dark', Boolean(isDark));
-
-        const setVar = (name, val) => {
-          if (val) root.style.setProperty(name, val);
-        };
-
-        setVar('--bg', tp.secondary_bg_color || tp.bg_color);
-        setVar('--surface', tp.section_bg_color || tp.bg_color);
-        setVar('--text', tp.text_color);
-        setVar('--text-muted', tp.hint_color);
-        setVar('--accent', tp.button_color || tp.link_color);
-        setVar('--accent-text', tp.button_text_color);
-        setVar('--danger', tp.destructive_text_color);
-      }
-
-      if (tg) {
-        try {
-          tg.ready();
-          tg.expand();
-          applyTelegramTheme(tg);
-          if (typeof tg.onEvent === 'function') {
-            tg.onEvent('themeChanged', () => applyTelegramTheme(tg));
-          }
-        } catch (err) {
-          console.warn('Telegram WebApp init warning:', err);
-        }
-      } else {
-        applyTelegramTheme(null);
-      }
-
-      const rawUserId = tg?.initDataUnsafe?.user?.id ?? null;
-      const currentUserId =
-        rawUserId !== null && rawUserId !== undefined && Number.isFinite(Number(rawUserId))
-          ? Number(rawUserId)
-          : null;
-
-      // =========================================================================
-      // КЛИЕНТ SUPABASE + ХРАНИЛИЩЕ
-      // =========================================================================
-      const useRealSupabase =
-        isSupabaseConfigured(SUPABASE_URL, SUPABASE_KEY) &&
-        window.supabase &&
-        typeof window.supabase.createClient === 'function';
-
-      const supabaseClient = useRealSupabase
-        ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
-        : null;
-
-      const STORAGE_PREFIX = 'anime_tracker_miniapp_';
-
-      function getLocalData(table, userId) {
-        try {
-          const key = `${STORAGE_PREFIX}${table}_${userId || 'guest'}`;
-          const raw = localStorage.getItem(key);
-          const parsed = raw ? JSON.parse(raw) : [];
-          return Array.isArray(parsed) ? parsed : [];
-        } catch {
-          return [];
-        }
-      }
-
-      function setLocalData(table, userId, rows) {
-        try {
-          const key = `${STORAGE_PREFIX}${table}_${userId || 'guest'}`;
-          localStorage.setItem(key, JSON.stringify(rows));
-        } catch {
-          // ignore storage quota errors
-        }
-      }
-
-      const db = {
-        async getTracking(userId) {
-          if (!userId) return [];
-          if (supabaseClient) {
-            const { data, error } = await supabaseClient
-              .from('tracking')
-              .select('*')
-              .eq('user_id', Number(userId));
-            if (error) throw error;
-            return data || [];
-          }
-          return getLocalData('tracking', userId);
-        },
-
-        async upsertTracking(record) {
-          if (supabaseClient) {
-            const { data, error } = await supabaseClient
-              .from('tracking')
-              .upsert(record, { onConflict: 'user_id,anime_id' })
-              .select();
-            if (error) throw error;
-            return (data && data[0]) || record;
-          }
-          const rows = getLocalData('tracking', record.user_id);
-          const idx = rows.findIndex((r) => String(r.anime_id) === String(record.anime_id));
-          if (idx >= 0) {
-            rows[idx] = { ...record };
-          } else {
-            rows.unshift({ ...record });
-          }
-          setLocalData('tracking', record.user_id, rows);
-          return record;
-        },
-
-        async updateTrackingByAnime(userId, animeId, patch) {
-          if (supabaseClient) {
-            const { data, error } = await supabaseClient
-              .from('tracking')
-              .update(patch)
-              .eq('user_id', Number(userId))
-              .eq('anime_id', Number(animeId))
-              .select();
-            if (error) throw error;
-            return (data && data[0]) || null;
-          }
-          const rows = getLocalData('tracking', userId);
-          const idx = rows.findIndex((r) => String(r.anime_id) === String(animeId));
-          if (idx >= 0) {
-            rows[idx] = { ...rows[idx], ...patch };
-            setLocalData('tracking', userId, rows);
-            return rows[idx];
-          }
-          return null;
-        },
-
-        async deleteTracking(userId, animeId) {
-          if (supabaseClient) {
-            const { error } = await supabaseClient
-              .from('tracking')
-              .delete()
-              .eq('user_id', Number(userId))
-              .eq('anime_id', Number(animeId));
-            if (error) throw error;
-            return;
-          }
-          const rows = getLocalData('tracking', userId).filter(
-            (r) => String(r.anime_id) !== String(animeId)
-          );
-          setLocalData('tracking', userId, rows);
-        },
-
-        async getHistory(userId) {
-          if (!userId) return [];
-          if (supabaseClient) {
-            const { data, error } = await supabaseClient
-              .from('history')
-              .select('*')
-              .eq('user_id', Number(userId))
-              .order('finished_at', { ascending: false });
-            if (error) throw error;
-            return data || [];
-          }
-          return getLocalData('history', userId);
-        },
-
-        async upsertHistory(record) {
-          if (supabaseClient) {
-            const { data, error } = await supabaseClient
-              .from('history')
-              .upsert(record, { onConflict: 'user_id,anime_id' })
-              .select();
-            if (error) throw error;
-            return (data && data[0]) || record;
-          }
-          const rows = getLocalData('history', record.user_id);
-          const idx = rows.findIndex((r) => String(r.anime_id) === String(record.anime_id));
-          if (idx >= 0) {
-            rows[idx] = { ...record };
-          } else {
-            rows.unshift({ ...record });
-          }
-          setLocalData('history', record.user_id, rows);
-          return record;
-        },
-
-        async updateHistory(userId, animeId, patch) {
-          if (supabaseClient) {
-            const { data, error } = await supabaseClient
-              .from('history')
-              .update(patch)
-              .eq('user_id', Number(userId))
-              .eq('anime_id', Number(animeId))
-              .select();
-            if (error) throw error;
-            return (data && data[0]) || null;
-          }
-          const rows = getLocalData('history', userId);
-          const idx = rows.findIndex((r) => String(r.anime_id) === String(animeId));
-          if (idx >= 0) {
-            rows[idx] = { ...rows[idx], ...patch };
-            setLocalData('history', userId, rows);
-            return rows[idx];
-          }
-          return null;
-        },
-
-        async deleteHistory(userId, animeId) {
-          if (supabaseClient) {
-            const { error } = await supabaseClient
-              .from('history')
-              .delete()
-              .eq('user_id', Number(userId))
-              .eq('anime_id', Number(animeId));
-            if (error) throw error;
-            return;
-          }
-          const rows = getLocalData('history', userId).filter(
-            (r) => String(r.anime_id) !== String(animeId)
-          );
-          setLocalData('history', userId, rows);
-        },
-      };
-
-      // =========================================================================
-      // SHIKIMORI API (shikimori.io, без кастомного User-Agent для WebView)
-      // =========================================================================
-      async function fetchShikimoriJson(path) {
-        const url = `${SHIKIMORI_API_BASE}${path}`;
-        const res = await fetch(url, {
-          method: 'GET',
-        });
-        if (!res.ok) {
-          let details = '';
-          try {
-            details = (await res.text()).trim().slice(0, 180);
-          } catch {
-            // ignore body read error
-          }
-          const statusPart = `HTTP ${res.status}${res.statusText ? ' ' + res.statusText : ''}`;
-          throw new Error(details ? `${statusPart}: ${details}` : statusPart);
-        }
-        return await res.json();
-      }
-
-      async function searchShikimori(query) {
-        const q = encodeURIComponent(query.trim());
-        const path = q
-          ? `/api/animes?search=${q}&limit=18&order=popularity`
-          : `/api/animes?status=ongoing&order=popularity&limit=12`;
-        return await fetchShikimoriJson(path);
-      }
-
-      async function fetchAnimeDetails(animeId) {
-        return await fetchShikimoriJson(`/api/animes/${encodeURIComponent(animeId)}`);
-      }
-
-      // =========================================================================
-      // СОСТОЯНИЕ ПРИЛОЖЕНИЯ И DOM-ССЫЛКИ
-      // =========================================================================
-      const _todayNow = new Date();
-      const _todayDateKey = formatLocalDateKey(
-        _todayNow.getFullYear(),
-        _todayNow.getMonth(),
-        _todayNow.getDate()
-      );
-
-      const state = {
-        activeTab: 'search',
-        searchQuery: '',
-        searchItems: [],
-        searchLoading: false,
-        searchError: '',
-        trackingItems: [],
-        trackingLoading: false,
-        historyItems: [],
-        historyLoading: false,
-        calendarYear: _todayNow.getFullYear(),
-        calendarMonth: _todayNow.getMonth(),
-        calendarSelectedDate: _todayDateKey,
-        pendingDeleteId: null,
-        modalAnime: null,
-        modalDetail: null,
-        modalWatched: 0,
-        modalNotifyTarget: 'dm',
-        moveTargetItem: null,
-        moveScore: 8,
-      };
-
-      const el = {
-        userIdBadge: document.getElementById('userIdBadge'),
-        closeAppBtn: document.getElementById('closeAppBtn'),
-        telegramWarning: document.getElementById('telegramWarning'),
-        supabaseNotice: document.getElementById('supabaseNotice'),
-        dismissSupabaseNotice: document.getElementById('dismissSupabaseNotice'),
-        tabSections: {
-          search: document.getElementById('tab-search'),
-          tracking: document.getElementById('tab-tracking'),
-          calendar: document.getElementById('tab-calendar'),
-          history: document.getElementById('tab-history'),
-        },
-        navButtons: Array.from(document.querySelectorAll('.tab-btn[data-tab]')),
-        searchForm: document.getElementById('searchForm'),
-        searchInput: document.getElementById('searchInput'),
-        clearSearchBtn: document.getElementById('clearSearchBtn'),
-        searchSubmitBtn: document.getElementById('searchSubmitBtn'),
-        searchMeta: document.getElementById('searchMeta'),
-        searchResults: document.getElementById('searchResults'),
-        trackingList: document.getElementById('trackingList'),
-        trackingCount: document.getElementById('trackingCount'),
-        calSummaryMeta: document.getElementById('calSummaryMeta'),
-        calPrevMonthBtn: document.getElementById('calPrevMonthBtn'),
-        calNextMonthBtn: document.getElementById('calNextMonthBtn'),
-        calTodayBtn: document.getElementById('calTodayBtn'),
-        calMonthLabel: document.getElementById('calMonthLabel'),
-        calGrid: document.getElementById('calGrid'),
-        calSelectedDateTitle: document.getElementById('calSelectedDateTitle'),
-        calSelectedDateCount: document.getElementById('calSelectedDateCount'),
-        calDayReleases: document.getElementById('calDayReleases'),
-        historyList: document.getElementById('historyList'),
-        historyCount: document.getElementById('historyCount'),
-        trackingModal: document.getElementById('trackingModal'),
-        modalPosterWrap: document.getElementById('modalPosterWrap'),
-        modalTitle: document.getElementById('modalTitle'),
-        modalSubtitle: document.getElementById('modalSubtitle'),
-        modalReleaseLine: document.getElementById('modalReleaseLine'),
-        modalDescriptionBox: document.getElementById('modalDescriptionBox'),
-        modalCloseBtn: document.getElementById('modalCloseBtn'),
-        modalCancelBtn: document.getElementById('modalCancelBtn'),
-        trackingForm: document.getElementById('trackingForm'),
-        modalEpWatched: document.getElementById('modalEpWatched'),
-        modalEpTotal: document.getElementById('modalEpTotal'),
-        modalEpMinus: document.getElementById('modalEpMinus'),
-        modalEpPlus: document.getElementById('modalEpPlus'),
-        chkTrackEpisodes: document.getElementById('chkTrackEpisodes'),
-        chkTrackStatus: document.getElementById('chkTrackStatus'),
-        chkTrackLicense: document.getElementById('chkTrackLicense'),
-        chkDate: document.getElementById('chkDate'),
-        notifyButtons: Array.from(document.querySelectorAll('.segmented-btn[data-target]')),
-        modalSaveBtn: document.getElementById('modalSaveBtn'),
-        moveHistoryModal: document.getElementById('moveHistoryModal'),
-        moveHistorySubtitle: document.getElementById('moveHistorySubtitle'),
-        moveHistoryCloseBtn: document.getElementById('moveHistoryCloseBtn'),
-        moveCancelBtn: document.getElementById('moveCancelBtn'),
-        moveHistoryForm: document.getElementById('moveHistoryForm'),
-        moveScoreGrid: document.getElementById('moveScoreGrid'),
-        moveNoteInput: document.getElementById('moveNoteInput'),
-        errorModal: document.getElementById('errorModal'),
-        errorModalTitle: document.getElementById('errorModalTitle'),
-        errorModalMessage: document.getElementById('errorModalMessage'),
-        errorModalCloseBtn: document.getElementById('errorModalCloseBtn'),
-        errorModalOkBtn: document.getElementById('errorModalOkBtn'),
-        toastMsg: document.getElementById('toastMsg'),
-      };
-
-      let toastTimer = null;
-      function showToast(text) {
-        if (!el.toastMsg) return;
-        el.toastMsg.textContent = text;
-        el.toastMsg.classList.add('visible');
-        clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => {
-          el.toastMsg.classList.remove('visible');
-        }, 2600);
-      }
-
-      function showErrorPopup(title, err) {
-        if (el.toastMsg) {
-          clearTimeout(toastTimer);
-          el.toastMsg.classList.remove('visible');
-        }
-        if (!el.errorModal) return;
-        el.errorModalTitle.textContent = title || 'Ошибка базы данных';
-        el.errorModalMessage.textContent = formatSupabaseError(err);
-        el.errorModal.hidden = false;
-      }
-
-      function closeErrorPopup() {
-        if (!el.errorModal) return;
-        el.errorModal.hidden = true;
-      }
-
-      function renderPosterMarkup(posterUrl, title) {
-        const displayTitle = title || 'Аниме';
-        const safeTitle = escapeHtml(displayTitle);
-        const palette = getPosterPlaceholderPalette(displayTitle);
-        const fallbackHtml = `
-          <div class="poster-fallback" style="background:${palette.bg};color:${palette.fg};">
-            <span class="poster-fallback-title">${safeTitle}</span>
+      });
+      renderTracking();
+    }
+
+    function renderTracking() {
+      const container = document.getElementById('tracking-list-container');
+      const filtered = state.trackingList.filter(item => {
+        const f = state.filterTracking;
+        if (f === 'all') return true;
+        if (f === 'licensed') return item.licensed_by && item.licensed_by !== 'Не указано';
+        if (f === 'unlicensed') return !item.licensed_by || item.licensed_by === 'Не указано';
+        if (f === 'date_known') return getAnimeReleaseInfo(item.next_episode_at, item.status).isExact;
+        if (f === 'date_unknown') return !getAnimeReleaseInfo(item.next_episode_at, item.status).isExact;
+        if (f === 'ongoing') return item.status === 'ongoing';
+        if (f === 'anons') return item.status === 'anons';
+        return true;
+      });
+
+      document.getElementById('tracking-count-label').innerText = `Общий список команды озвучки (${filtered.length})`;
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-16 text-slate-500 col-span-full">
+            <i data-lucide="bookmark" class="w-12 h-12 mx-auto mb-3 opacity-30"></i>
+            <p class="text-sm">Нет отслеживаемых тайтлов</p>
           </div>
         `;
-        if (!posterUrl) {
-          return fallbackHtml;
-        }
+        return;
+      }
+
+      container.innerHTML = filtered.map(item => {
+        const releaseInfo = getAnimeReleaseInfo(item.next_episode_at, item.status);
         return `
-          <img
-            src="${escapeHtml(posterUrl)}"
-            alt="Постер ${safeTitle}"
-            referrerpolicy="no-referrer"
-            loading="lazy"
-            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-          />
-          <div class="poster-fallback" style="display:none;background:${palette.bg};color:${palette.fg};">
-            <span class="poster-fallback-title">${safeTitle}</span>
+          <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 flex space-x-4 shadow-lg">
+            <img src="${item.poster}" alt="" class="w-24 h-36 object-cover rounded-xl shadow-md shrink-0 bg-slate-900" />
+            <div class="flex-1 flex flex-col justify-between min-w-0">
+              <div>
+                <h3 class="font-semibold text-sm text-white line-clamp-2">${item.title}</h3>
+                <p class="text-xs text-slate-400 mt-1">Лицензия: <span class="text-slate-200">${item.licensed_by || 'Нет'}</span></p>
+                <div class="mt-2 flex items-center space-x-1.5 text-xs text-slate-300">
+                  <i data-lucide="clock" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
+                  <span class="line-clamp-1">${releaseInfo.text}</span>
+                </div>
+                <div class="mt-3 flex items-center justify-between bg-slate-900/60 px-3 py-1.5 rounded-xl border border-slate-700/50">
+                  <span class="text-xs text-slate-300">Серия: <strong class="text-indigo-400">${item.watched_episodes || 0}</strong> / ${item.episodes || '?'}</span>
+                  <div class="flex items-center space-x-1">
+                    <button onclick="updateWatched(${item.anime_id}, -1)" class="w-6 h-6 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-xs font-bold"><i data-lucide="minus" class="w-3 h-3"></i></button>
+                    <button onclick="updateWatched(${item.anime_id}, 1)" class="w-6 h-6 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center text-xs font-bold"><i data-lucide="plus" class="w-3 h-3"></i></button>
+                  </div>
+                </div>
+              </div>
+              ${state.isAdmin ? `
+                <div class="pt-3 flex items-center justify-between border-t border-slate-700/50 mt-3">
+                  <div class="flex items-center space-x-1">
+                    <button onclick='openDubModal(${JSON.stringify(item).replace(/'/g, "&#39;")})' title="В озвучку" class="p-1.5 rounded-lg bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/30 transition"><i data-lucide="volume-2" class="w-4 h-4"></i></button>
+                    <button onclick='moveToHistory(${JSON.stringify(item).replace(/'/g, "&#39;")})' title="В историю" class="p-1.5 rounded-lg bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/30 transition"><i data-lucide="check-circle" class="w-4 h-4"></i></button>
+                  </div>
+                  <button onclick="deleteTracking(${item.anime_id})" title="Удалить" class="p-1.5 rounded-lg bg-rose-600/20 text-rose-300 hover:bg-rose-600/30 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
+              ` : ''}
+            </div>
           </div>
         `;
-      }
+      }).join('');
+      lucide.createIcons();
+    }
 
-      function pluralTitles(count) {
-        const mod10 = count % 10;
-        const mod100 = count % 100;
-        if (mod10 === 1 && mod100 !== 11) return `${count} тайтл`;
-        if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return `${count} тайтла`;
-        return `${count} тайтлов`;
-      }
-
-      // =========================================================================
-      // РЕНДЕР ВКЛАДОК
-      // =========================================================================
-      function switchTab(tabName) {
-        state.activeTab = tabName;
-        Object.entries(el.tabSections).forEach(([key, section]) => {
-          section.classList.toggle('hidden', key !== tabName);
-        });
-        el.navButtons.forEach((btn) => {
-          const isActive = btn.dataset.tab === tabName;
-          btn.classList.toggle('active', isActive);
-          btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
-        });
-        if (tabName === 'tracking') loadTracking();
-        if (tabName === 'calendar') {
-          renderCalendar();
-          if (currentUserId) loadTracking();
+    async function updateWatched(animeId, delta) {
+      state.trackingList = state.trackingList.map(item => {
+        if (item.anime_id === animeId) {
+          const nextWatched = Math.max(0, Math.min(item.episodes || 99, (item.watched_episodes || 0) + delta));
+          return { ...item, watched_episodes: nextWatched };
         }
-        if (tabName === 'history') loadHistory();
-      }
+        return item;
+      });
+      saveStorage('tracking', state.trackingList);
+      renderTracking();
 
-      function renderSearch() {
-        if (state.searchLoading) {
-          el.searchResults.innerHTML = `
-            <div class="state-box" style="grid-column: 1 / -1;">
-              <p class="state-title">Загрузка каталога Shikimori...</p>
-              <p class="state-desc">Получаем актуальные тайтлы и информацию о сериях.</p>
-            </div>
-          `;
-          return;
-        }
-
-        if (state.searchError) {
-          el.searchResults.innerHTML = `
-            <div class="state-box" style="grid-column: 1 / -1;" role="alert">
-              <p class="state-title">Не удалось загрузить результаты</p>
-              <p class="state-desc" id="searchErrorText" style="word-break: break-word;">${escapeHtml(state.searchError)}</p>
-              <button type="button" class="btn-secondary" id="retrySearchBtn">Повторить запрос</button>
-            </div>
-          `;
-          document.getElementById('retrySearchBtn')?.addEventListener('click', runSearch);
-          return;
-        }
-
-        if (!state.searchItems.length) {
-          el.searchResults.innerHTML = `
-            <div class="state-box" style="grid-column: 1 / -1;">
-              <p class="state-title">Ничего не найдено</p>
-              <p class="state-desc">Попробуйте другое название на русском или ромадзи, например «Frieren» или «Наруто».</p>
-            </div>
-          `;
-          return;
-        }
-
-        const trackedIds = new Set(state.trackingItems.map((t) => String(t.anime_id)));
-
-        el.searchResults.innerHTML = state.searchItems
-          .map((anime) => {
-            const title = anime.russian || anime.name || 'Без названия';
-            const origTitle = anime.russian && anime.name !== anime.russian ? anime.name : '';
-            const poster = getPosterUrl(anime);
-            const episodesLabel =
-              anime.episodes > 0
-                ? `${anime.episodes} эп.`
-                : anime.episodes_aired > 0
-                  ? `${anime.episodes_aired} эп.`
-                  : 'эп. уточняются';
-            const yearLabel = extractReleaseYear(anime);
-            const scoreLabel = anime.score && Number(anime.score) > 0 ? `★ ${anime.score}` : '';
-            const rawReleaseDate = anime.next_episode_at || anime.aired_on || anime.released_on || null;
-            const releaseInfo = getAnimeReleaseInfo(rawReleaseDate, anime.status);
-            const releasePrefix =
-              anime.next_episode_at && releaseInfo.isExact && releaseInfo.hasTime
-                ? 'След. серия: '
-                : releaseInfo.isExact
-                  ? 'Выход: '
-                  : '';
-            const releaseDateText = releaseInfo.text;
-            const isTracked = trackedIds.has(String(anime.id));
-
-            return `
-              <article class="anime-card">
-                <button
-                  type="button"
-                  class="search-card-btn"
-                  data-anime-id="${escapeHtml(anime.id)}"
-                  aria-label="Настроить отслеживание: ${escapeHtml(title)}"
-                >
-                  <div class="poster-frame">
-                    ${renderPosterMarkup(poster, title)}
-                  </div>
-                  <div class="card-body">
-                    <h3 class="card-title">${escapeHtml(title)}</h3>
-                    ${origTitle ? `<div class="card-subtitle">${escapeHtml(origTitle)}</div>` : ''}
-                    <div class="meta-line tabular-nums">
-                      <span>${escapeHtml(formatAnimeKind(anime.kind))}</span>
-                      ${yearLabel ? `<span aria-hidden="true">·</span><span>${escapeHtml(yearLabel)}</span>` : ''}
-                      <span aria-hidden="true">·</span>
-                      <span>${escapeHtml(formatAnimeStatus(anime.status))}</span>
-                      <span aria-hidden="true">·</span>
-                      <span>${escapeHtml(episodesLabel)}</span>
-                      ${scoreLabel ? `<span aria-hidden="true">·</span><span>${escapeHtml(scoreLabel)}</span>` : ''}
-                    </div>
-                    <div class="meta-line tabular-nums">
-                      <span>${escapeHtml(releasePrefix + releaseDateText)}</span>
-                    </div>
-                    <div class="meta-line" style="margin-top: auto; padding-top: 2px;">
-                      <span class="${isTracked ? 'meta-accent' : ''}">
-                        ${isTracked ? 'В списке отслеживания · Изменить' : 'Нажмите, чтобы отслеживать'}
-                      </span>
-                    </div>
-                  </div>
-                </button>
-              </article>
-            `;
-          })
-          .join('');
-      }
-
-      function renderTracking() {
-        el.trackingCount.textContent = pluralTitles(state.trackingItems.length);
-
-        if (!currentUserId) {
-          el.trackingList.innerHTML = `
-            <div class="state-box" style="grid-column: 1 / -1;">
-              <p class="state-title">Нужен профиль Telegram</p>
-              <p class="state-desc">Откройте Mini App внутри Telegram через кнопку Меню бота, чтобы загрузить и сохранять ваш список отслеживания.</p>
-            </div>
-          `;
-          return;
-        }
-
-        if (state.trackingLoading) {
-          el.trackingList.innerHTML = `
-            <div class="state-box" style="grid-column: 1 / -1;">
-              <p class="state-title">Загружаем отслеживаемые тайтлы...</p>
-            </div>
-          `;
-          return;
-        }
-
-        if (!state.trackingItems.length) {
-          el.trackingList.innerHTML = `
-            <div class="state-box" style="grid-column: 1 / -1;">
-              <p class="state-title">Список отслеживания пуст</p>
-              <p class="state-desc">Найдите аниме во вкладке «Поиск» и выберите, какие обновления отслеживать.</p>
-              <button type="button" class="btn-primary" id="goToSearchBtn">Перейти к поиску</button>
-            </div>
-          `;
-          document.getElementById('goToSearchBtn')?.addEventListener('click', () => switchTab('search'));
-          return;
-        }
-
-        el.trackingList.innerHTML = state.trackingItems
-          .map((item) => {
-            const title = item.title || 'Без названия';
-            const posterUrl = getPosterUrl(item.poster);
-            const watched = Number(item.watched_episodes) || 0;
-            const total = Number(item.episodes) || 0;
-            const totalLabel = total > 0 ? total : '?';
-            const percent = calculateProgressPercent(watched, total);
-            const nextEp = getAnimeReleaseInfo(item.next_episode_at, item.status).text;
-            const license = item.licensed_by ? item.licensed_by : 'Нет данных';
-            const hasDateTracking = Boolean(item.track_date);
-            const isDeleting = String(state.pendingDeleteId) === String(item.anime_id);
-
-            return `
-              <article class="anime-card" data-tracking-id="${escapeHtml(item.anime_id)}">
-                <div class="anime-card-row">
-                  <div class="poster-frame">
-                    ${renderPosterMarkup(posterUrl, title)}
-                  </div>
-                  <div class="card-body">
-                    <h3 class="card-title">${escapeHtml(title)}</h3>
-                    <div class="meta-line">
-                      <span>${escapeHtml(formatAnimeStatus(item.status))}</span>
-                      <span aria-hidden="true">·</span>
-                      <span>${escapeHtml(formatNotifyTarget(item.notify_target))}</span>
-                      ${
-                        hasDateTracking
-                          ? `<span aria-hidden="true">·</span><span class="date-track-badge" data-date-badge="true" title="Отслеживается дата выхода 1 серии"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg><span>Дата старта</span></span>`
-                          : ''
-                      }
-                    </div>
-                    <div class="detail-rows">
-                      <div class="detail-row">
-                        <span>Выход / серия</span>
-                        <span class="tabular-nums">${escapeHtml(nextEp)}</span>
-                      </div>
-                      <div class="detail-row">
-                        <span>Лицензия</span>
-                        <span>${escapeHtml(license)}</span>
-                      </div>
-                      <div class="detail-row">
-                        <span>Триггеры</span>
-                        <span>${escapeHtml(formatTrackingFlags(item))}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="progress-block">
-                  <div class="progress-top">
-                    <span class="progress-label">
-                      Прогресс: <strong>${watched} / ${totalLabel}</strong> эп.
-                    </span>
-                    <div class="stepper-group">
-                      <button
-                        type="button"
-                        class="stepper-btn"
-                        data-action="ep-minus"
-                        data-anime-id="${escapeHtml(item.anime_id)}"
-                        aria-label="Убавить серию для ${escapeHtml(title)}"
-                      >−</button>
-                      <button
-                        type="button"
-                        class="stepper-btn"
-                        data-action="ep-plus"
-                        data-anime-id="${escapeHtml(item.anime_id)}"
-                        aria-label="Добавить серию для ${escapeHtml(title)}"
-                      >+1</button>
-                    </div>
-                  </div>
-                  <div class="progress-track" aria-hidden="true">
-                    <div class="progress-fill" style="width: ${percent}%"></div>
-                  </div>
-                </div>
-
-                ${
-                  isDeleting
-                    ? `
-                      <div class="confirm-delete-row">
-                        <span>Удалить из списка?</span>
-                        <div class="confirm-delete-btns">
-                          <button type="button" class="btn-secondary" data-action="cancel-delete" data-anime-id="${escapeHtml(item.anime_id)}">Нет</button>
-                          <button type="button" class="btn-danger" data-action="confirm-delete" data-anime-id="${escapeHtml(item.anime_id)}">Удалить</button>
-                        </div>
-                      </div>
-                    `
-                    : `
-                      <div class="card-actions">
-                        <button
-                          type="button"
-                          class="btn-secondary"
-                          data-action="settings"
-                          data-anime-id="${escapeHtml(item.anime_id)}"
-                        >Настройки</button>
-                        <button
-                          type="button"
-                          class="btn-secondary"
-                          data-action="to-history"
-                          data-anime-id="${escapeHtml(item.anime_id)}"
-                        >В историю</button>
-                        <button
-                          type="button"
-                          class="btn-danger"
-                          data-action="ask-delete"
-                          data-anime-id="${escapeHtml(item.anime_id)}"
-                        >Удалить</button>
-                      </div>
-                    `
-                }
-              </article>
-            `;
-          })
-          .join('');
-      }
-
-      function formatFinishedDate(isoString) {
-        if (!isoString) return '';
-        const d = new Date(isoString);
-        if (Number.isNaN(d.getTime())) return '';
-        const day = d.getDate();
-        const monthShort = SHIKI_MONTHS_SHORT[d.getMonth()] || '';
-        const year = d.getFullYear();
-        return `${day} ${monthShort} ${year} г.`;
-      }
-
-      function renderHistory() {
-        el.historyCount.textContent = pluralTitles(state.historyItems.length);
-
-        if (!currentUserId) {
-          el.historyList.innerHTML = `
-            <div class="state-box" style="grid-column: 1 / -1;">
-              <p class="state-title">Нужен профиль Telegram</p>
-              <p class="state-desc">Откройте приложение внутри Telegram, чтобы просматривать и редактировать вашу историю оценок.</p>
-            </div>
-          `;
-          return;
-        }
-
-        if (state.historyLoading) {
-          el.historyList.innerHTML = `
-            <div class="state-box" style="grid-column: 1 / -1;">
-              <p class="state-title">Загружаем историю...</p>
-            </div>
-          `;
-          return;
-        }
-
-        if (!state.historyItems.length) {
-          el.historyList.innerHTML = `
-            <div class="state-box" style="grid-column: 1 / -1;">
-              <p class="state-title">История пока пуста</p>
-              <p class="state-desc">Когда завершите просмотр тайтла во вкладке «Отслеживаю», нажмите «В историю», чтобы поставить оценку 1–10 и оставить заметку.</p>
-            </div>
-          `;
-          return;
-        }
-
-        el.historyList.innerHTML = state.historyItems
-          .map((item) => {
-            const title = item.title || 'Без названия';
-            const posterUrl = resolvePosterUrl(item.poster);
-            const rating = normalizeScore(item.rating);
-            const finishedLabel = formatFinishedDate(item.finished_at);
-            const scoreButtons = Array.from({ length: 10 }, (_, idx) => {
-              const val = idx + 1;
-              const active = rating === val ? 'active' : '';
-              return `
-                <button
-                  type="button"
-                  class="score-btn ${active}"
-                  data-action="set-score"
-                  data-anime-id="${escapeHtml(item.anime_id)}"
-                  data-score="${val}"
-                  aria-label="Оценка ${val} для ${escapeHtml(title)}"
-                  aria-pressed="${rating === val ? 'true' : 'false'}"
-                >${val}</button>
-              `;
-            }).join('');
-
-            return `
-              <article class="anime-card" data-history-id="${escapeHtml(item.anime_id)}">
-                <div class="anime-card-row">
-                  <div class="poster-frame">
-                    ${renderPosterMarkup(posterUrl, title)}
-                  </div>
-                  <div class="card-body">
-                    <h3 class="card-title">${escapeHtml(title)}</h3>
-                    <div class="meta-line tabular-nums">
-                      <span class="meta-accent">${rating ? `Оценка: ${rating}/10` : 'Без оценки'}</span>
-                      ${finishedLabel ? `<span aria-hidden="true">·</span><span>${escapeHtml(finishedLabel)}</span>` : ''}
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <span class="form-section-label" style="margin-bottom: 6px;">Оценка 1–10</span>
-                  <div class="score-grid">${scoreButtons}</div>
-                </div>
-
-                <div>
-                  <label class="form-section-label" for="note-${escapeHtml(item.anime_id)}" style="margin-bottom: 6px;">Заметка</label>
-                  <textarea
-                    id="note-${escapeHtml(item.anime_id)}"
-                    class="note-textarea"
-                    data-note-for="${escapeHtml(item.anime_id)}"
-                    placeholder="Напишите короткую заметку..."
-                  >${escapeHtml(item.note || '')}</textarea>
-                </div>
-
-                <div class="history-footer">
-                  <button
-                    type="button"
-                    class="btn-danger"
-                    data-action="delete-history"
-                    data-anime-id="${escapeHtml(item.anime_id)}"
-                  >Удалить</button>
-                  <button
-                    type="button"
-                    class="btn-primary"
-                    style="min-height: 44px; padding: 8px 18px;"
-                    data-action="save-history"
-                    data-anime-id="${escapeHtml(item.anime_id)}"
-                  >Сохранить</button>
-                </div>
-              </article>
-            `;
-          })
-          .join('');
-      }
-
-      // =========================================================================
-      // ЗАГРУЗКА ДАННЫХ И ДЕЙСТВИЯ
-      // =========================================================================
-      async function runSearch() {
-        state.searchLoading = true;
-        state.searchError = '';
-        renderSearch();
-
-        const query = state.searchQuery.trim();
-        el.searchMeta.textContent = query ? `Результаты: «${query}»` : 'Популярные онгоинги';
-
+      if (supabaseClient) {
         try {
-          const items = await searchShikimori(query);
-          state.searchItems = Array.isArray(items) ? items : [];
-        } catch (err) {
-          console.error('Shikimori search error:', err);
-          state.searchError = `Ошибка запроса к Shikimori: ${formatFetchError(err)}`;
-          state.searchItems = [];
-        } finally {
-          state.searchLoading = false;
-          renderSearch();
-        }
+          const item = state.trackingList.find(i => i.anime_id === animeId);
+          await supabaseClient.from('tracking').update({ watched_episodes: item.watched_episodes }).match({ anime_id: animeId });
+        } catch (e) { console.warn(e); }
       }
+    }
 
-      function pluralReleases(count) {
-        const mod10 = count % 10;
-        const mod100 = count % 100;
-        if (mod10 === 1 && mod100 !== 11) return `${count} релиз`;
-        if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return `${count} релиза`;
-        return `${count} релизов`;
+    async function deleteTracking(animeId) {
+      state.trackingList = state.trackingList.filter(t => t.anime_id !== animeId);
+      saveStorage('tracking', state.trackingList);
+      renderTracking();
+
+      if (supabaseClient) {
+        try { await supabaseClient.from('tracking').delete().match({ anime_id: animeId }); } catch (e) {}
       }
+    }
 
-      function renderCalendar() {
-        const year = state.calendarYear;
-        const monthIndex = state.calendarMonth;
-        el.calMonthLabel.textContent = formatCalendarMonthTitle(year, monthIndex);
+    async function moveToHistory(item) {
+      const currentUserId = state.tgUser?.id || OWNER_ID;
+      const historyItem = {
+        id: String(Date.now()),
+        user_id: currentUserId,
+        anime_id: item.anime_id,
+        title: item.title,
+        poster: item.poster,
+        rating: 10,
+        note: 'Просмотрено полностью',
+        finished_at: new Date().toISOString()
+      };
+      state.historyList.unshift(historyItem);
+      saveStorage('history', state.historyList);
+      deleteTracking(item.anime_id);
+      switchTab('history');
+    }
 
-        const now = new Date();
-        const todayKey = formatLocalDateKey(now.getFullYear(), now.getMonth(), now.getDate());
-        const isCurrentMonth = year === now.getFullYear() && monthIndex === now.getMonth();
-        el.calTodayBtn.classList.toggle('hidden', isCurrentMonth && state.calendarSelectedDate === todayKey);
+    // Calendar
+    function setCalendarMode(mode) {
+      state.calendarMode = mode;
+      document.getElementById('cal-mode-general').className = `flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-medium ${mode === 'general' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}`;
+      document.getElementById('cal-mode-dub').className = `flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-medium ${mode === 'dub' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}`;
+      renderCalendar();
+    }
 
-        const { eventsByDate, totalEventsCount, firstReleaseDateKey } = buildCalendarEventsForMonth(
-          state.trackingItems,
-          year,
-          monthIndex
-        );
-
-        el.calSummaryMeta.textContent =
-          totalEventsCount > 0 ? `${pluralReleases(totalEventsCount)} в месяце` : 'Нет точных дат в месяце';
-
-        const selectedMonthPrefix = `${year}-${String(monthIndex + 1).padStart(2, '0')}-`;
-        if (!state.calendarSelectedDate || !state.calendarSelectedDate.startsWith(selectedMonthPrefix)) {
-          state.calendarSelectedDate = isCurrentMonth
-            ? todayKey
-            : firstReleaseDateKey || formatLocalDateKey(year, monthIndex, 1);
-        }
-
-        const firstDayOfMonth = new Date(year, monthIndex, 1);
-        const startOffset = (firstDayOfMonth.getDay() + 6) % 7; // Пн = 0 ... Вс = 6
-        const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-
-        const cellsHtml = [];
-        for (let i = 0; i < startOffset; i += 1) {
-          cellsHtml.push('<div class="cal-day-spacer" aria-hidden="true"></div>');
-        }
-
-        for (let day = 1; day <= daysInMonth; day += 1) {
-          const dateKey = formatLocalDateKey(year, monthIndex, day);
-          const dayEvents = eventsByDate[dateKey] || [];
-          const count = dayEvents.length;
-          const isToday = dateKey === todayKey;
-          const isSelected = dateKey === state.calendarSelectedDate;
-
-          const classes = ['cal-day-btn'];
-          if (isToday) classes.push('is-today');
-          if (count > 0) classes.push('has-release');
-          if (isSelected) classes.push('is-selected');
-
-          let markerHtml = '<span class="cal-day-marker" aria-hidden="true"></span>';
-          if (count === 1) {
-            markerHtml = '<span class="cal-day-marker" aria-hidden="true"><span class="cal-dot"></span></span>';
-          } else if (count > 1) {
-            markerHtml = `<span class="cal-day-marker" aria-hidden="true"><span class="cal-count-badge">${count}</span></span>`;
-          }
-
-          const ariaParts = [formatCalendarDayHeading(dateKey)];
-          if (count > 0) ariaParts.push(pluralReleases(count));
-
-          cellsHtml.push(`
-            <button
-              type="button"
-              class="${classes.join(' ')}"
-              data-date-key="${dateKey}"
-              aria-label="${escapeHtml(ariaParts.join(' — '))}"
-              aria-pressed="${isSelected ? 'true' : 'false'}"
-            >
-              <span class="cal-day-num">${day}</span>
-              ${markerHtml}
-            </button>
-          `);
-        }
-
-        el.calGrid.innerHTML = cellsHtml.join('');
-
-        // Панель релизов выбранного дня под календарем
-        const selectedEvents = eventsByDate[state.calendarSelectedDate] || [];
-        el.calSelectedDateTitle.textContent = formatCalendarDayHeading(state.calendarSelectedDate);
-        el.calSelectedDateCount.textContent =
-          selectedEvents.length > 0 ? pluralReleases(selectedEvents.length) : 'Нет релизов';
-
-        if (!currentUserId) {
-          el.calDayReleases.innerHTML = `
-            <div class="state-box" style="grid-column: 1 / -1;">
-              <p class="state-title">Нужен профиль Telegram</p>
-              <p class="state-desc">Откройте Mini App через кнопку Меню бота, чтобы видеть календарь ваших отслеживаемых тайтлов.</p>
-            </div>
-          `;
+    function renderCalendar() {
+      const container = document.getElementById('calendar-content-container');
+      if (state.calendarMode === 'general') {
+        const exactList = state.trackingList.filter(item => getAnimeReleaseInfo(item.next_episode_at, item.status).isExact);
+        if (exactList.length === 0) {
+          container.innerHTML = `<div class="text-center py-16 text-slate-500"><i data-lucide="calendar" class="w-12 h-12 mx-auto mb-3 opacity-30"></i><p class="text-sm">Нет тайтлов с точной датой выхода</p></div>`;
           return;
         }
-
-        if (!state.trackingItems.length) {
-          el.calDayReleases.innerHTML = `
-            <div class="state-box" style="grid-column: 1 / -1;">
-              <p class="state-title">Нет отслеживаемых тайтлов</p>
-              <p class="state-desc">Добавьте онгоинги или анонсы с точной датой во вкладке «Поиск», и они появятся в календаре.</p>
-            </div>
-          `;
-          return;
-        }
-
-        if (!selectedEvents.length) {
-          el.calDayReleases.innerHTML = `
-            <div class="state-box" style="grid-column: 1 / -1;">
-              <p class="state-title">На этот день релизов нет</p>
-              <p class="state-desc">${
-                firstReleaseDateKey
-                  ? 'Выберите день с яркой точкой в календаре, чтобы посмотреть время выхода серий.'
-                  : 'У отслеживаемых тайтлов в этом месяце пока нет точных дат выхода (примерные даты без дня не отображаются).'
-              }</p>
-            </div>
-          `;
-          return;
-        }
-
-        el.calDayReleases.innerHTML = selectedEvents
-          .map((ev) => {
-            const epText = ev.episodeNumber
-              ? ev.totalEpisodes > 0
-                ? `Серия ${ev.episodeNumber} из ${ev.totalEpisodes}`
-                : `Серия ${ev.episodeNumber}`
-              : formatAnimeStatus(ev.status);
-            const timePrefix = ev.hasTime ? `Выход в ${ev.timeLabel}` : ev.timeLabel;
-
-            return `
-              <article class="anime-card" data-calendar-anime="${escapeHtml(ev.animeId)}">
-                <button
-                  type="button"
-                  class="calendar-release-btn"
-                  data-calendar-anime-id="${escapeHtml(ev.animeId)}"
-                  aria-label="Открыть настройки: ${escapeHtml(ev.title)}"
-                >
-                  <div class="poster-frame">
-                    ${renderPosterMarkup(ev.poster, ev.title)}
-                  </div>
-                  <div class="card-body">
-                    <h3 class="card-title">${escapeHtml(ev.title)}</h3>
-                    <div class="meta-line tabular-nums">
-                      <span class="meta-accent">${escapeHtml(timePrefix)}</span>
-                      <span aria-hidden="true">·</span>
-                      <span>${escapeHtml(epText)}</span>
-                    </div>
-                    <div class="meta-line">
-                      <span>${escapeHtml(formatAnimeStatus(ev.status))}</span>
-                      ${ev.isProjected ? '<span aria-hidden="true">·</span><span>По расписанию</span>' : ''}
-                    </div>
-                  </div>
-                </button>
-              </article>
-            `;
-          })
-          .join('');
-      }
-
-      async function loadTracking() {
-        if (!currentUserId) {
-          renderTracking();
-          if (state.activeTab === 'calendar') renderCalendar();
-          return;
-        }
-        state.trackingLoading = true;
-        renderTracking();
-        try {
-          state.trackingItems = await db.getTracking(currentUserId);
-        } catch (err) {
-          console.error('Load tracking error:', err);
-          showErrorPopup('Ошибка загрузки «Отслеживаю»', err);
-        } finally {
-          state.trackingLoading = false;
-          renderTracking();
-          if (state.activeTab === 'search') renderSearch();
-          if (state.activeTab === 'calendar') renderCalendar();
-        }
-      }
-
-      async function loadHistory() {
-        if (!currentUserId) {
-          renderHistory();
-          return;
-        }
-        state.historyLoading = true;
-        renderHistory();
-        try {
-          state.historyItems = await db.getHistory(currentUserId);
-        } catch (err) {
-          console.error('Load history error:', err);
-          showErrorPopup('Ошибка загрузки «Истории»', err);
-        } finally {
-          state.historyLoading = false;
-          renderHistory();
-        }
-      }
-
-      // =========================================================================
-      // МОДАЛЬНОЕ ОКНО НАСТРОЕК ОТСЛЕЖИВАНИЯ
-      // =========================================================================
-      function setNotifyTarget(target) {
-        const normalized = normalizeNotifyTarget(target);
-        state.modalNotifyTarget = normalized;
-        el.notifyButtons.forEach((btn) => {
-          const active = btn.dataset.target === normalized;
-          btn.classList.toggle('active', active);
-          btn.setAttribute('aria-checked', active ? 'true' : 'false');
-        });
-      }
-
-      function updateModalSummary(animeData, existingRecord = null) {
-        const year = extractReleaseYear(animeData);
-        const scoreVal = animeData.score && Number(animeData.score) > 0 ? `★ ${animeData.score}` : '';
-        const statusVal = existingRecord?.status || animeData.status;
-        const subtitleParts = [
-          formatAnimeKind(animeData.kind),
-          year || '',
-          formatAnimeStatus(statusVal),
-          scoreVal,
-        ].filter(Boolean);
-
-        el.modalSubtitle.innerHTML = subtitleParts
-          .map((part) => `<span>${escapeHtml(part)}</span>`)
-          .join('<span aria-hidden="true">·</span>');
-
-        const rawReleaseDate =
-          animeData.next_episode_at ||
-          animeData.aired_on ||
-          animeData.released_on ||
-          existingRecord?.next_episode_at ||
-          null;
-        const releaseInfo = getAnimeReleaseInfo(rawReleaseDate, statusVal);
-        const hasNextEpSource = Boolean(
-          animeData.next_episode_at ||
-            (!animeData.aired_on && !animeData.released_on && existingRecord?.next_episode_at)
-        );
-        const prefix =
-          hasNextEpSource && releaseInfo.isExact && releaseInfo.hasTime
-            ? 'След. серия: '
-            : releaseInfo.isExact
-              ? 'Дата старта: '
-              : '';
-        el.modalReleaseLine.textContent = prefix + releaseInfo.text;
-      }
-
-      async function openTrackingModal(animeData, existingRecord = null) {
-        state.modalAnime = animeData;
-        state.modalDetail = null;
-
-        const title = existingRecord?.title || animeData.russian || animeData.name || 'Без названия';
-        const poster = getPosterUrl(existingRecord?.poster) || getPosterUrl(animeData);
-        const totalEp = existingRecord?.episodes ?? animeData.episodes ?? 0;
-
-        state.modalWatched = existingRecord ? Number(existingRecord.watched_episodes) || 0 : 0;
-        el.modalEpWatched.textContent = String(state.modalWatched);
-        el.modalEpTotal.textContent = totalEp > 0 ? String(totalEp) : '?';
-
-        el.modalTitle.textContent = title;
-        updateModalSummary(animeData, existingRecord);
-        el.modalPosterWrap.innerHTML = renderPosterMarkup(poster, title);
-
-        const initialDesc = stripHtmlTags(animeData.description || animeData.description_html);
-        if (initialDesc) {
-          el.modalDescriptionBox.textContent = initialDesc;
-          el.modalDescriptionBox.classList.remove('hidden');
-        } else {
-          el.modalDescriptionBox.textContent = 'Загружаем описание...';
-          el.modalDescriptionBox.classList.remove('hidden');
-        }
-
-        el.chkTrackEpisodes.checked = existingRecord ? Boolean(existingRecord.track_episodes) : true;
-        el.chkTrackStatus.checked = existingRecord ? Boolean(existingRecord.track_status) : true;
-        el.chkTrackLicense.checked = existingRecord ? Boolean(existingRecord.track_license) : false;
-        el.chkDate.checked = existingRecord
-          ? existingRecord.track_date !== undefined && existingRecord.track_date !== null
-            ? Boolean(existingRecord.track_date)
-            : true
-          : true;
-        setNotifyTarget(existingRecord?.notify_target || 'dm');
-
-        el.trackingModal.hidden = false;
-
-        // Подгружаем детали Shikimori для next_episode_at, licensed_by, description, score
-        try {
-          const detail = await fetchAnimeDetails(animeData.id || existingRecord?.anime_id);
-          state.modalDetail = detail;
-          if (detail) {
-            if (detail.episodes > 0) {
-              el.modalEpTotal.textContent = String(detail.episodes);
-            }
-            const detailPoster = getPosterUrl(detail);
-            if (!poster && detailPoster) {
-              el.modalPosterWrap.innerHTML = renderPosterMarkup(detailPoster, title);
-            }
-            updateModalSummary(detail, existingRecord);
-            const cleanDesc = stripHtmlTags(detail.description || detail.description_html);
-            if (cleanDesc) {
-              el.modalDescriptionBox.textContent = cleanDesc;
-              el.modalDescriptionBox.classList.remove('hidden');
-            } else {
-              el.modalDescriptionBox.textContent = '';
-              el.modalDescriptionBox.classList.add('hidden');
-            }
-          }
-        } catch (err) {
-          console.warn('Detail fetch skipped:', err);
-          if (!initialDesc) {
-            el.modalDescriptionBox.textContent = '';
-            el.modalDescriptionBox.classList.add('hidden');
-          }
-          showToast(`Не удалось загрузить детали: ${formatFetchError(err)}`);
-        }
-      }
-
-      function closeTrackingModal() {
-        el.trackingModal.hidden = true;
-        state.modalAnime = null;
-        state.modalDetail = null;
-      }
-
-      async function handleSaveTracking(e) {
-        e.preventDefault();
-        if (!currentUserId) {
-          showToast('Откройте приложение в Telegram для сохранения');
-          return;
-        }
-        if (!state.modalAnime) return;
-
-        el.modalSaveBtn.disabled = true;
-        const base = state.modalAnime;
-        const detail = state.modalDetail;
-        const existing = state.trackingItems.find(
-          (item) => String(item.anime_id) === String(base.id || base.anime_id)
-        );
-
-        const resolvedPoster = getPosterUrl(detail) || getPosterUrl(base) || getPosterUrl(existing?.poster);
-        const resolvedReleaseAt =
-          detail?.next_episode_at ||
-          detail?.aired_on ||
-          detail?.released_on ||
-          base.next_episode_at ||
-          base.aired_on ||
-          base.released_on ||
-          existing?.next_episode_at ||
-          null;
-
-        const payload = buildTrackingPayload({
-          userId: currentUserId,
-          animeId: base.id || base.anime_id,
-          title: existing?.title || detail?.russian || base.russian || detail?.name || base.name || 'Без названия',
-          poster: resolvedPoster || existing?.poster || '',
-          status: detail?.status || base.status || existing?.status || 'ongoing',
-          episodes: detail?.episodes || base.episodes || existing?.episodes || 0,
-          episodesAired: detail?.episodes_aired ?? base.episodes_aired ?? existing?.episodes_aired ?? 0,
-          nextEpisodeAt: resolvedReleaseAt,
-          licensedBy: extractLicenseText(detail) || existing?.licensed_by || '',
-          trackEpisodes: el.chkTrackEpisodes.checked,
-          trackStatus: el.chkTrackStatus.checked,
-          trackLicense: el.chkTrackLicense.checked,
-          trackDate: el.chkDate.checked,
-          notifyTarget: state.modalNotifyTarget,
-          watchedEpisodes: state.modalWatched,
-        });
-
-        try {
-          await db.upsertTracking(payload);
-          await loadTracking();
-          closeTrackingModal();
-          if (state.activeTab === 'calendar') renderCalendar();
-          showToast('Настройки отслеживания сохранены');
-        } catch (err) {
-          console.error('Save tracking error:', err);
-          showErrorPopup('Ошибка сохранения в tracking', err);
-        } finally {
-          el.modalSaveBtn.disabled = false;
-        }
-      }
-
-      // =========================================================================
-      // МОДАЛЬНОЕ ОКНО «В ИСТОРИЮ»
-      // =========================================================================
-      function renderMoveScoreGrid() {
-        el.moveScoreGrid.innerHTML = Array.from({ length: 10 }, (_, idx) => {
-          const val = idx + 1;
-          const active = state.moveScore === val ? 'active' : '';
+        container.innerHTML = exactList.map(item => {
+          const info = getAnimeReleaseInfo(item.next_episode_at, item.status);
           return `
-            <button
-              type="button"
-              class="score-btn ${active}"
-              data-move-score="${val}"
-              aria-label="Оценка ${val}"
-              aria-pressed="${state.moveScore === val ? 'true' : 'false'}"
-            >${val}</button>
+            <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 flex items-center space-x-4 shadow-lg">
+              <img src="${item.poster}" alt="" class="w-16 h-24 object-cover rounded-xl bg-slate-900 shrink-0" />
+              <div class="flex-1 min-w-0">
+                <h3 class="font-semibold text-sm text-white">${item.title}</h3>
+                <div class="mt-1 flex items-center space-x-2 text-xs text-indigo-300">
+                  <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                  <span>${info.text}</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-1">Лицензия: ${item.licensed_by}</p>
+              </div>
+            </div>
           `;
         }).join('');
-      }
-
-      function openMoveHistoryModal(item) {
-        state.moveTargetItem = item;
-        state.moveScore = 8;
-        el.moveHistorySubtitle.textContent = item.title || 'Без названия';
-        el.moveNoteInput.value = '';
-        renderMoveScoreGrid();
-        el.moveHistoryModal.hidden = false;
-      }
-
-      function closeMoveHistoryModal() {
-        el.moveHistoryModal.hidden = true;
-        state.moveTargetItem = null;
-      }
-
-      async function handleConfirmMoveToHistory(e) {
-        e.preventDefault();
-        if (!currentUserId || !state.moveTargetItem) return;
-        const item = state.moveTargetItem;
-
-        const historyPayload = buildHistoryPayload({
-          userId: currentUserId,
-          animeId: item.anime_id,
-          title: item.title || 'Без названия',
-          poster: resolvePosterUrl(item.poster),
-          rating: state.moveScore,
-          note: el.moveNoteInput.value.trim(),
-          finishedAt: new Date().toISOString(),
-        });
-
-        try {
-          await db.upsertHistory(historyPayload);
-          await db.deleteTracking(currentUserId, item.anime_id);
-          closeMoveHistoryModal();
-          await Promise.all([loadTracking(), loadHistory()]);
-          showToast('Тайтл перенесён в историю');
-        } catch (err) {
-          console.error('Move to history error:', err);
-          showErrorPopup('Ошибка переноса в history', err);
-        }
-      }
-
-      // =========================================================================
-      // ОБРАБОТЧИКИ СОБЫТИЙ
-      // =========================================================================
-      function bindEvents() {
-        // Кнопка закрытия / сворачивания Mini App
-        el.closeAppBtn.addEventListener('click', () => {
-          if (tg && typeof tg.close === 'function') {
-            tg.close();
-          } else {
-            showToast('Кнопка работает внутри Telegram Mini App');
-          }
-        });
-
-        el.dismissSupabaseNotice.addEventListener('click', () => {
-          el.supabaseNotice.classList.add('hidden');
-        });
-
-        // Нижние 3 вкладки
-        el.navButtons.forEach((btn) => {
-          btn.addEventListener('click', () => switchTab(btn.dataset.tab));
-        });
-
-        // Поиск
-        el.searchInput.addEventListener('input', () => {
-          state.searchQuery = el.searchInput.value;
-          el.clearSearchBtn.classList.toggle('hidden', !state.searchQuery);
-        });
-
-        el.clearSearchBtn.addEventListener('click', () => {
-          state.searchQuery = '';
-          el.searchInput.value = '';
-          el.clearSearchBtn.classList.add('hidden');
-          runSearch();
-        });
-
-        el.searchForm.addEventListener('submit', (e) => {
-          e.preventDefault();
-          state.searchQuery = el.searchInput.value;
-          runSearch();
-        });
-
-        // Клик по карточке поиска -> открываем модалку отслеживания
-        el.searchResults.addEventListener('click', (e) => {
-          const btn = e.target.closest('.search-card-btn[data-anime-id]');
-          if (!btn) return;
-          const anime = state.searchItems.find((a) => String(a.id) === String(btn.dataset.animeId));
-          if (!anime) return;
-          const existing = state.trackingItems.find((t) => String(t.anime_id) === String(anime.id));
-          openTrackingModal(anime, existing || null);
-        });
-
-        // Действия во вкладке «Отслеживаю»
-        el.trackingList.addEventListener('click', async (e) => {
-          const btn = e.target.closest('button[data-action]');
-          if (!btn) return;
-          const action = btn.dataset.action;
-          const animeId = btn.dataset.animeId;
-          const item = state.trackingItems.find((t) => String(t.anime_id) === String(animeId));
-          if (!item) return;
-
-          if (action === 'ep-plus' || action === 'ep-minus') {
-            const current = Number(item.watched_episodes) || 0;
-            const total = Number(item.episodes) || 0;
-            let next = action === 'ep-plus' ? current + 1 : Math.max(0, current - 1);
-            if (total > 0) next = Math.min(total, next);
-            item.watched_episodes = next;
-            renderTracking();
-            try {
-              await db.updateTrackingByAnime(currentUserId, animeId, { watched_episodes: next });
-            } catch (err) {
-              console.error('Update episodes error:', err);
-              showErrorPopup('Ошибка обновления серий', err);
-            }
-          } else if (action === 'settings') {
-            openTrackingModal(
-              {
-                id: item.anime_id,
-                russian: item.title,
-                name: item.title,
-                episodes: item.episodes,
-                episodes_aired: item.episodes_aired,
-                next_episode_at: item.next_episode_at,
-                status: item.status,
-                image: item.poster,
-              },
-              item
-            );
-          } else if (action === 'to-history') {
-            openMoveHistoryModal(item);
-          } else if (action === 'ask-delete') {
-            state.pendingDeleteId = animeId;
-            renderTracking();
-          } else if (action === 'cancel-delete') {
-            state.pendingDeleteId = null;
-            renderTracking();
-          } else if (action === 'confirm-delete') {
-            state.pendingDeleteId = null;
-            try {
-              await db.deleteTracking(currentUserId, animeId);
-              await loadTracking();
-              showToast('Тайтл удалён из отслеживания');
-            } catch (err) {
-              console.error('Delete tracking error:', err);
-              showErrorPopup('Ошибка удаления из tracking', err);
-            }
-          }
-        });
-
-        // Календарь релизов
-        el.calPrevMonthBtn.addEventListener('click', () => {
-          if (state.calendarMonth === 0) {
-            state.calendarMonth = 11;
-            state.calendarYear -= 1;
-          } else {
-            state.calendarMonth -= 1;
-          }
-          renderCalendar();
-        });
-
-        el.calNextMonthBtn.addEventListener('click', () => {
-          if (state.calendarMonth === 11) {
-            state.calendarMonth = 0;
-            state.calendarYear += 1;
-          } else {
-            state.calendarMonth += 1;
-          }
-          renderCalendar();
-        });
-
-        el.calTodayBtn.addEventListener('click', () => {
-          const now = new Date();
-          state.calendarYear = now.getFullYear();
-          state.calendarMonth = now.getMonth();
-          state.calendarSelectedDate = formatLocalDateKey(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate()
-          );
-          renderCalendar();
-        });
-
-        el.calGrid.addEventListener('click', (e) => {
-          const btn = e.target.closest('button[data-date-key]');
-          if (!btn) return;
-          state.calendarSelectedDate = btn.dataset.dateKey;
-          renderCalendar();
-        });
-
-        el.calDayReleases.addEventListener('click', (e) => {
-          const btn = e.target.closest('button[data-calendar-anime-id]');
-          if (!btn) return;
-          const animeId = btn.dataset.calendarAnimeId;
-          const item = state.trackingItems.find((t) => String(t.anime_id) === String(animeId));
-          if (!item) return;
-          openTrackingModal(
-            {
-              id: item.anime_id,
-              russian: item.title,
-              name: item.title,
-              episodes: item.episodes,
-              episodes_aired: item.episodes_aired,
-              next_episode_at: item.next_episode_at,
-              status: item.status,
-              image: item.poster,
-            },
-            item
-          );
-        });
-
-        // Действия во вкладке «История»
-        el.historyList.addEventListener('click', async (e) => {
-          const btn = e.target.closest('button[data-action]');
-          if (!btn) return;
-          const action = btn.dataset.action;
-          const animeId = btn.dataset.animeId;
-          const item = state.historyItems.find((h) => String(h.anime_id) === String(animeId));
-          if (!item) return;
-
-          if (action === 'set-score') {
-            const rating = Number(btn.dataset.score);
-            item.rating = rating;
-            const noteEl = el.historyList.querySelector(`textarea[data-note-for="${CSS.escape(String(animeId))}"]`);
-            if (noteEl) item.note = noteEl.value;
-            renderHistory();
-            try {
-              await db.updateHistory(currentUserId, animeId, { rating });
-              showToast(`Оценка ${rating}/10 сохранена`);
-            } catch (err) {
-              console.error('Score update error:', err);
-              showErrorPopup('Ошибка сохранения оценки', err);
-            }
-          } else if (action === 'save-history') {
-            const noteEl = el.historyList.querySelector(`textarea[data-note-for="${CSS.escape(String(animeId))}"]`);
-            const note = noteEl ? noteEl.value.trim() : '';
-            item.note = note;
-            try {
-              await db.updateHistory(currentUserId, animeId, {
-                rating: normalizeScore(item.rating) ?? 8,
-                note,
+      } else {
+        // Dub schedule
+        const expanded = [];
+        state.dubScheduleList.forEach(show => {
+          const firstDate = new Date(show.first_ep_date);
+          if (!isNaN(firstDate.getTime())) {
+            const total = show.total_episodes || 12;
+            for (let ep = 1; ep <= total; ep++) {
+              const epDate = new Date(firstDate);
+              epDate.setDate(firstDate.getDate() + (ep - 1) * 7);
+              expanded.push({
+                ...show,
+                episode_number: ep,
+                formatted_date: epDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' })
               });
-              showToast('Заметка и оценка сохранены');
-            } catch (err) {
-              console.error('Save history error:', err);
-              showErrorPopup('Ошибка сохранения в history', err);
-            }
-          } else if (action === 'delete-history') {
-            try {
-              await db.deleteHistory(currentUserId, animeId);
-              await loadHistory();
-              showToast('Запись удалена из истории');
-            } catch (err) {
-              console.error('Delete history error:', err);
-              showErrorPopup('Ошибка удаления из history', err);
             }
           }
         });
 
-        // Модалка отслеживания
-        el.modalEpMinus.addEventListener('click', () => {
-          state.modalWatched = Math.max(0, state.modalWatched - 1);
-          el.modalEpWatched.textContent = String(state.modalWatched);
-        });
-
-        el.modalEpPlus.addEventListener('click', () => {
-          const total = Number(state.modalDetail?.episodes || state.modalAnime?.episodes || 0);
-          state.modalWatched = total > 0 ? Math.min(total, state.modalWatched + 1) : state.modalWatched + 1;
-          el.modalEpWatched.textContent = String(state.modalWatched);
-        });
-
-        el.notifyButtons.forEach((btn) => {
-          btn.addEventListener('click', () => setNotifyTarget(btn.dataset.target));
-        });
-
-        el.modalCloseBtn.addEventListener('click', closeTrackingModal);
-        el.modalCancelBtn.addEventListener('click', closeTrackingModal);
-        el.trackingModal.addEventListener('click', (e) => {
-          if (e.target === el.trackingModal) closeTrackingModal();
-        });
-        el.trackingForm.addEventListener('submit', handleSaveTracking);
-
-        // Модалка переноса в историю
-        el.moveScoreGrid.addEventListener('click', (e) => {
-          const btn = e.target.closest('button[data-move-score]');
-          if (!btn) return;
-          state.moveScore = Number(btn.dataset.moveScore);
-          renderMoveScoreGrid();
-        });
-
-        el.moveHistoryCloseBtn.addEventListener('click', closeMoveHistoryModal);
-        el.moveCancelBtn.addEventListener('click', closeMoveHistoryModal);
-        el.moveHistoryModal.addEventListener('click', (e) => {
-          if (e.target === el.moveHistoryModal) closeMoveHistoryModal();
-        });
-        el.moveHistoryForm.addEventListener('submit', handleConfirmMoveToHistory);
-
-        // Модалка технической ошибки Supabase
-        el.errorModalCloseBtn.addEventListener('click', closeErrorPopup);
-        el.errorModalOkBtn.addEventListener('click', closeErrorPopup);
-        el.errorModal.addEventListener('click', (e) => {
-          if (e.target === el.errorModal) closeErrorPopup();
-        });
-
-        // Escape закрывает модальные окна
-        document.addEventListener('keydown', (e) => {
-          if (e.key === 'Escape') {
-            if (!el.errorModal.hidden) closeErrorPopup();
-            if (!el.trackingModal.hidden) closeTrackingModal();
-            if (!el.moveHistoryModal.hidden) closeMoveHistoryModal();
-          }
-        });
-      }
-
-      // =========================================================================
-      // СТАРТ ПРИЛОЖЕНИЯ
-      // =========================================================================
-      function initApp() {
-        if (!currentUserId) {
-          el.telegramWarning.classList.remove('hidden');
-          el.userIdBadge.textContent = 'Гость';
-        } else {
-          el.telegramWarning.classList.add('hidden');
-          el.userIdBadge.textContent = `ID ${currentUserId}`;
+        if (expanded.length === 0) {
+          container.innerHTML = `<div class="text-center py-16 text-slate-500"><i data-lucide="volume-2" class="w-12 h-12 mx-auto mb-3 opacity-30"></i><p class="text-sm">График озвучки пуст</p></div>`;
+          return;
         }
 
-        if (!useRealSupabase) {
-          el.supabaseNotice.classList.remove('hidden');
-        }
+        container.innerHTML = expanded.map(ep => `
+          <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 flex space-x-4 shadow-lg">
+            <img src="${ep.poster}" alt="" class="w-20 h-28 object-cover rounded-xl bg-slate-900 shrink-0" />
+            <div class="flex-1 flex flex-col justify-between min-w-0">
+              <div>
+                <div class="flex items-center justify-between">
+                  <h3 class="font-semibold text-sm text-white">${ep.title}</h3>
+                  <span class="text-xs font-bold bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 px-2.5 py-0.5 rounded-full">Серия ${ep.episode_number} из ${ep.total_episodes}</span>
+                </div>
+                <div class="mt-1.5 flex items-center space-x-2 text-xs text-indigo-300">
+                  <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                  <span>${ep.formatted_date}</span>
+                </div>
+                <div class="mt-2 text-xs text-slate-300 space-y-0.5">
+                  ${ep.actors ? `<p>🎙 Каст: <span class="text-slate-100">${ep.actors}</span></p>` : ''}
+                  ${ep.subbers ? `<p>✍️ Сабберы: <span class="text-slate-100">${ep.subbers}</span></p>` : ''}
+                  ${ep.sound_engineers ? `<p>🎛 Звукорежиссеры: <span class="text-slate-100">${ep.sound_engineers}</span></p>` : ''}
+                </div>
+              </div>
+              ${state.isAdmin ? `
+                <div class="pt-3 flex items-center justify-between border-t border-slate-700/50 mt-3">
+                  <button onclick='openDubModal(${JSON.stringify(ep).replace(/'/g, "&#39;")})' class="flex items-center space-x-1 text-xs text-indigo-400 hover:text-indigo-300 font-medium">
+                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i><span>Редактировать</span>
+                  </button>
+                  <button onclick="deleteDub(${ep.anime_id})" class="text-xs text-rose-400 hover:text-rose-300"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `).join('');
+      }
+      lucide.createIcons();
+    }
 
-        bindEvents();
-        loadTracking();
-        runSearch();
+    function openDubModal(item) {
+      state.dubModalAnime = item;
+      document.getElementById('dub-date').value = item.first_ep_date || new Date().toISOString().slice(0, 10);
+      document.getElementById('dub-total-eps').value = item.total_episodes || 12;
+      document.getElementById('dub-actors').value = item.actors || '';
+      document.getElementById('dub-subbers').value = item.subbers || '';
+      document.getElementById('dub-sound').value = item.sound_engineers || '';
+      document.getElementById('dub-notify-min').value = item.notify_before_min || 30;
+      document.getElementById('modal-dub').classList.remove('hidden');
+    }
+
+    async function saveDubScheduleFromModal() {
+      const item = state.dubModalAnime;
+      if (!item) return;
+
+      const dubItem = {
+        anime_id: item.anime_id || item.id,
+        title: item.title,
+        poster: item.poster,
+        first_ep_date: document.getElementById('dub-date').value,
+        total_episodes: parseInt(document.getElementById('dub-total-eps').value) || 12,
+        actors: document.getElementById('dub-actors').value,
+        subbers: document.getElementById('dub-subbers').value,
+        sound_engineers: document.getElementById('dub-sound').value,
+        notify_before_min: parseInt(document.getElementById('dub-notify-min').value) || 30,
+        notify_target: 'group'
+      };
+
+      const idx = state.dubScheduleList.findIndex(d => d.anime_id === dubItem.anime_id);
+      if (idx >= 0) state.dubScheduleList[idx] = dubItem;
+      else state.dubScheduleList.unshift(dubItem);
+
+      saveStorage('dub_schedule', state.dubScheduleList);
+      closeModal('modal-dub');
+      renderCalendar();
+
+      if (supabaseClient) {
+        try { await supabaseClient.from('dub_schedule').upsert(dubItem, { onConflict: 'anime_id' }); } catch (e) {}
+      }
+    }
+
+    async function deleteDub(animeId) {
+      state.dubScheduleList = state.dubScheduleList.filter(d => d.anime_id !== animeId);
+      saveStorage('dub_schedule', state.dubScheduleList);
+      renderCalendar();
+      if (supabaseClient) {
+        try { await supabaseClient.from('dub_schedule').delete().match({ anime_id: animeId }); } catch (e) {}
+      }
+    }
+
+    // History
+    function renderHistory() {
+      const container = document.getElementById('history-list-container');
+      document.getElementById('history-count-label').innerText = `Завершенные тайтлы и оценки команды (${state.historyList.length})`;
+
+      if (state.historyList.length === 0) {
+        container.innerHTML = `<div class="text-center py-16 text-slate-500 col-span-full"><i data-lucide="trophy" class="w-12 h-12 mx-auto mb-3 opacity-30"></i><p class="text-sm">История просмотров пуста</p></div>`;
+        return;
       }
 
-      initApp();
-    </script>
-  </body>
+      container.innerHTML = state.historyList.map(item => `
+        <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 flex space-x-4 shadow-lg">
+          <img src="${item.poster}" alt="" class="w-24 h-36 object-cover rounded-xl bg-slate-900 shrink-0" />
+          <div class="flex-1 flex flex-col justify-between min-w-0">
+            <div>
+              <div class="flex items-start justify-between">
+                <h3 class="font-semibold text-sm text-white line-clamp-2">${item.title}</h3>
+                <span class="flex items-center space-x-0.5 text-xs font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md shrink-0">
+                  <i data-lucide="star" class="w-3 h-3 fill-amber-400"></i><span>${item.rating}/10</span>
+                </span>
+              </div>
+              <p class="text-xs text-slate-400 mt-2 italic bg-slate-900/50 p-2 rounded-xl border border-slate-700/40">"${item.note || 'Без заметки'}"</p>
+            </div>
+            ${state.isAdmin ? `
+              <div class="pt-3 flex items-center justify-end border-t border-slate-700/50 mt-3">
+                <button onclick='openHistoryModal(${JSON.stringify(item).replace(/'/g, "&#39;")})' class="flex items-center space-x-1 text-xs bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/30 px-3 py-1.5 rounded-xl border border-indigo-500/30 font-medium">
+                  <i data-lucide="edit-3" class="w-3.5 h-3.5"></i><span>Изменить оценку / заметку</span>
+                </button>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function openHistoryModal(item) {
+      state.historyModalItem = item;
+      document.getElementById('hist-rating').value = item.rating || 10;
+      document.getElementById('hist-note').value = item.note || '';
+      document.getElementById('modal-history').classList.remove('hidden');
+    }
+
+    async function saveHistoryFromModal() {
+      const item = state.historyModalItem;
+      if (!item) return;
+
+      const rating = parseInt(document.getElementById('hist-rating').value) || 10;
+      const note = document.getElementById('hist-note').value;
+
+      state.historyList = state.historyList.map(h => h.id === item.id ? { ...h, rating, note } : h);
+      saveStorage('history', state.historyList);
+      closeModal('modal-history');
+      renderHistory();
+
+      if (supabaseClient) {
+        try { await supabaseClient.from('history').update({ rating, note }).match({ id: item.id }); } catch (e) {}
+      }
+    }
+
+    // Admins Management (Owner Only)
+    function openAdminsModal() {
+      renderAdminsList();
+      document.getElementById('modal-admins').classList.remove('hidden');
+    }
+
+    function renderAdminsList() {
+      const container = document.getElementById('admins-list-container');
+      container.innerHTML = state.teamAdmins.map(admin => `
+        <div class="flex items-center justify-between bg-slate-800/60 px-4 py-3 rounded-xl border border-slate-700">
+          <div class="text-xs text-slate-200">${admin.username ? `@${admin.username}` : `ID: ${admin.tg_id}`}</div>
+          <button onclick="removeAdmin('${admin.id}')" class="text-rose-400 hover:text-rose-300 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    async function addNewAdmin() {
+      const val = document.getElementById('new-admin-input').value.trim().replace('@', '');
+      if (!val) return;
+      const newAdmin = {
+        id: String(Date.now()),
+        tg_id: isNaN(Number(val)) ? null : Number(val),
+        username: isNaN(Number(val)) ? val.toLowerCase() : null
+      };
+
+      state.teamAdmins.push(newAdmin);
+      saveStorage('team_admins', state.teamAdmins);
+      document.getElementById('new-admin-input').value = '';
+      renderAdminsList();
+      updateAuthUI();
+
+      if (supabaseClient) {
+        try { await supabaseClient.from('team_admins').insert(newAdmin); } catch (e) {}
+      }
+    }
+
+    async function removeAdmin(id) {
+      state.teamAdmins = state.teamAdmins.filter(a => a.id !== id);
+      saveStorage('team_admins', state.teamAdmins);
+      renderAdminsList();
+      updateAuthUI();
+
+      if (supabaseClient) {
+        try { await supabaseClient.from('team_admins').delete().match({ id }); } catch (e) {}
+      }
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.add('hidden');
+    }
+  </script>
+</body>
 </html>
