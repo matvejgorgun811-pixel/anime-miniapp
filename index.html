@@ -1411,12 +1411,11 @@
       //   history: id, user_id, anime_id, anime_title, poster_url,
       //     episodes_watched, episodes_total, score, note, completed_at
       // =========================================================================
-      const SUPABASE_URL = 'https://ztdddyjdzrjybwwjmksv.supabase.co';
-      const SUPABASE_KEY = 'sb_publishable_mM0RHaRg5JzcLCdBRFWTeg_rerDn153;
+      const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
+      const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
 
-      const SHIKIMORI_API_BASE = 'https://shikimori.io'; // Официальный домен Shikimori API (shikimori.one/api/* делает 308 редирект на shikimori.io)
+      const SHIKIMORI_API_BASE = 'https://shikimori.io';
       const SHIKIMORI_MIRROR_BASE = 'https://shikimori.io';
-      const SHIKIMORI_USER_AGENT = 'AnimeTrackerMiniApp';
 
       // =========================================================================
       // ЧИСТЫЕ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (Форматирование, URL, валидация)
@@ -1438,8 +1437,18 @@
             ? imageObj
             : imageObj.preview || imageObj.original || imageObj.x96 || '';
         if (!raw || raw.includes('missing_')) return '';
-        if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+        if (raw.startsWith('http://') || raw.startsWith('https://')) {
+          return raw.replace(/^https?:\/\/shikimori\.one(?=\/|$)/i, 'https://shikimori.io');
+        }
         return base.replace(/\/$/, '') + (raw.startsWith('/') ? raw : '/' + raw);
+      }
+
+      function formatFetchError(err) {
+        if (!err) return 'Неизвестная ошибка сети';
+        if (typeof err === 'string') return err;
+        const name = err.name && err.name !== 'Error' ? `${err.name}: ` : '';
+        const message = err.message ? String(err.message) : String(err);
+        return `${name}${message}`.trim() || 'Неизвестная ошибка запроса';
       }
 
       function formatAnimeKind(kind) {
@@ -1765,16 +1774,23 @@
       };
 
       // =========================================================================
-      // SHIKIMORI API (shikimori.one/api/* -> shikimori.io с User-Agent: AnimeTrackerMiniApp)
+      // SHIKIMORI API (shikimori.io, без кастомного User-Agent для WebView)
       // =========================================================================
       async function fetchShikimoriJson(path) {
-        const res = await fetch(`${SHIKIMORI_API_BASE}${path}`, {
+        const url = `${SHIKIMORI_API_BASE}${path}`;
+        const res = await fetch(url, {
           method: 'GET',
-          headers: {
-            'User-Agent': SHIKIMORI_USER_AGENT,
-          },
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) {
+          let details = '';
+          try {
+            details = (await res.text()).trim().slice(0, 180);
+          } catch {
+            // ignore body read error
+          }
+          const statusPart = `HTTP ${res.status}${res.statusText ? ' ' + res.statusText : ''}`;
+          throw new Error(details ? `${statusPart}: ${details}` : statusPart);
+        }
         return await res.json();
       }
 
@@ -1942,9 +1958,9 @@
 
         if (state.searchError) {
           el.searchResults.innerHTML = `
-            <div class="state-box" style="grid-column: 1 / -1;">
+            <div class="state-box" style="grid-column: 1 / -1;" role="alert">
               <p class="state-title">Не удалось загрузить результаты</p>
-              <p class="state-desc">${escapeHtml(state.searchError)}</p>
+              <p class="state-desc" id="searchErrorText" style="word-break: break-word;">${escapeHtml(state.searchError)}</p>
               <button type="button" class="btn-secondary" id="retrySearchBtn">Повторить запрос</button>
             </div>
           `;
@@ -2283,7 +2299,7 @@
           state.searchItems = Array.isArray(items) ? items : [];
         } catch (err) {
           console.error('Shikimori search error:', err);
-          state.searchError = 'Сервер Shikimori временно недоступен или отклонил запрос.';
+          state.searchError = `Ошибка запроса к Shikimori: ${formatFetchError(err)}`;
           state.searchItems = [];
         } finally {
           state.searchLoading = false;
@@ -2381,6 +2397,7 @@
           }
         } catch (err) {
           console.warn('Detail fetch skipped:', err);
+          showToast(`Не удалось загрузить детали: ${formatFetchError(err)}`);
         }
       }
 
