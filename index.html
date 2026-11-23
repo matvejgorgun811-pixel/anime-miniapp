@@ -1778,7 +1778,7 @@
       //     track_status, track_license, track_date, notify_target, watched_episodes
       //   history: user_id, anime_id, title, poster, rating, note, finished_at
       // =========================================================================
-      const SUPABASE_URL = 'https://ztdddyjdzrjybwwjmksv.supabase.co';
+      const SUPABASE_URL = 'https://supabase.co';
       const SUPABASE_KEY = 'sb_publishable_mM0RHaRg5JzcLCdBRFWTeg_rerDn153';
 
       const SHIKIMORI_API_BASE = 'https://shikimori.io';
@@ -2014,111 +2014,101 @@
         'дек.',
       ];
 
-      function parseShikiDate(status, airedOn, nextEpisodeAt, episodesAired = null) {
-        const rawNext = nextEpisodeAt !== null && nextEpisodeAt !== undefined ? String(nextEpisodeAt).trim() : '';
-        if (rawNext) {
-          const dt = new Date(rawNext);
-          if (!Number.isNaN(dt.getTime())) {
-            const year = dt.getFullYear();
-            const monthIndex = dt.getMonth();
-            const day = dt.getDate();
-            const hours = String(dt.getHours()).padStart(2, '0');
-            const minutes = String(dt.getMinutes()).padStart(2, '0');
-            const monthShort = SHIKI_MONTHS_SHORT[monthIndex] || '';
-            const timeLabel = `${hours}:${minutes}`;
-            return {
-              isExact: true,
-              text: `${day} ${monthShort} ${year}, ${timeLabel}`,
-              year,
-              monthIndex,
-              day,
-              dateKey: formatLocalDateKey(year, monthIndex, day),
-              hasTime: true,
-              timeLabel,
-            };
-          }
-        }
+      function getAnimeReleaseInfo(rawDate, status = null) {
+        const emptyResult = {
+          text: 'Дата неизвестна',
+          isExact: false,
+          year: null,
+          monthIndex: null,
+          day: null,
+          dateKey: null,
+          hasTime: false,
+          timeLabel: '',
+        };
 
-        const rawAired = airedOn !== null && airedOn !== undefined ? String(airedOn).trim() : '';
-        if (rawAired) {
-          const datePart = rawAired.split('T')[0];
-          const parts = datePart.split('-');
-          const year = parts[0] || '';
-          const month = parts[1] || '';
-          const day = parts[2] || '';
+        if (!rawDate) return emptyResult;
+        const rawStr = String(rawDate).trim();
+        if (!rawStr) return emptyResult;
 
-          if (/^\d{4}$/.test(year) && /^\d{2}$/.test(month) && /^\d{2}$/.test(day)) {
-            const monthIndex = parseInt(month, 10) - 1;
-            const yearNum = parseInt(year, 10);
-            const dayNum = parseInt(day, 10);
-            const monthNom = SHIKI_MONTHS_NOMINATIVE[monthIndex];
-            const monthGen = SHIKI_MONTHS_GENITIVE[monthIndex];
+        const datePart = rawStr.slice(0, 10);
+        const [year = '', month = '', day = ''] = datePart.split('-');
+        const months = SHIKI_MONTHS_NOMINATIVE;
 
-            if (monthNom && monthGen && dayNum >= 1 && dayNum <= 31) {
-              const checkDate = new Date(yearNum, monthIndex, dayNum);
-              const isValidCalendarDay =
-                checkDate.getFullYear() === yearNum &&
-                checkDate.getMonth() === monthIndex &&
-                checkDate.getDate() === dayNum;
+        if (/^\d{4}$/.test(year) && /^\d{2}$/.test(month) && /^\d{2}$/.test(day)) {
+          const monthIndex = parseInt(month, 10) - 1;
+          const yearNum = parseInt(year, 10);
+          const dayNum = parseInt(day, 10);
+          const monthNom = months[monthIndex];
+          const monthGen = SHIKI_MONTHS_GENITIVE[monthIndex];
 
-              const isUnstarted =
-                status === 'anons' ||
-                (status !== 'released' &&
-                  episodesAired !== null &&
-                  episodesAired !== undefined &&
-                  Number(episodesAired) === 0);
-
-              if (day === '01' && isUnstarted) {
-                return {
-                  isExact: false,
-                  text: `Дата неизвестна (${monthNom} ${year})`,
-                  year: yearNum,
-                  monthIndex,
-                  day: dayNum,
-                  dateKey: null,
-                  hasTime: false,
-                  timeLabel: '',
-                };
-              }
-
-              if (isValidCalendarDay) {
-                return {
-                  isExact: true,
-                  text: `${dayNum} ${monthGen} ${year}`,
-                  year: yearNum,
-                  monthIndex,
-                  day: dayNum,
-                  dateKey: formatLocalDateKey(yearNum, monthIndex, dayNum),
-                  hasTime: false,
-                  timeLabel: 'Дата старта',
-                };
-              }
-            }
-          }
-
-          if (/^\d{4}$/.test(year) && /^\d{2}$/.test(month)) {
-            const monthIndex = parseInt(month, 10) - 1;
-            const monthNom = SHIKI_MONTHS_NOMINATIVE[monthIndex];
-            if (monthNom) {
+          if (monthNom && monthGen && dayNum >= 1 && dayNum <= 31) {
+            // Главное правило: 1-е число при status === 'anons' ИЛИ без времени ('T') -> приблизительная дата
+            if (day === '01' && (status === 'anons' || !rawStr.includes('T'))) {
               return {
+                text: 'Дата неизвестна (' + monthNom + ' ' + year + ')',
                 isExact: false,
-                text: `Дата неизвестна (${monthNom} ${year})`,
-                year: parseInt(year, 10),
+                year: yearNum,
                 monthIndex,
-                day: null,
+                day: dayNum,
                 dateKey: null,
                 hasTime: false,
                 timeLabel: '',
               };
             }
-          }
 
-          if (/^\d{4}$/.test(year)) {
+            if (rawStr.includes('T')) {
+              const dt = new Date(rawStr);
+              if (!Number.isNaN(dt.getTime())) {
+                const dtYear = dt.getFullYear();
+                const dtMonthIndex = dt.getMonth();
+                const dtDay = dt.getDate();
+                const hours = String(dt.getHours()).padStart(2, '0');
+                const minutes = String(dt.getMinutes()).padStart(2, '0');
+                const timeLabel = `${hours}:${minutes}`;
+                const monthShort = SHIKI_MONTHS_SHORT[dtMonthIndex] || SHIKI_MONTHS_GENITIVE[dtMonthIndex] || '';
+                return {
+                  text: `${dtDay} ${monthShort} ${dtYear}, ${timeLabel}`,
+                  isExact: true,
+                  year: dtYear,
+                  monthIndex: dtMonthIndex,
+                  day: dtDay,
+                  dateKey: formatLocalDateKey(dtYear, dtMonthIndex, dtDay),
+                  hasTime: true,
+                  timeLabel,
+                };
+              }
+            }
+
+            const checkDate = new Date(yearNum, monthIndex, dayNum);
+            const isValidCalendarDay =
+              checkDate.getFullYear() === yearNum &&
+              checkDate.getMonth() === monthIndex &&
+              checkDate.getDate() === dayNum;
+
+            if (isValidCalendarDay) {
+              return {
+                text: `${dayNum} ${monthGen} ${year}`,
+                isExact: true,
+                year: yearNum,
+                monthIndex,
+                day: dayNum,
+                dateKey: formatLocalDateKey(yearNum, monthIndex, dayNum),
+                hasTime: false,
+                timeLabel: 'Дата старта',
+              };
+            }
+          }
+        }
+
+        if (/^\d{4}$/.test(year) && /^\d{2}$/.test(month)) {
+          const monthIndex = parseInt(month, 10) - 1;
+          const monthNom = months[monthIndex];
+          if (monthNom) {
             return {
+              text: 'Дата неизвестна (' + monthNom + ' ' + year + ')',
               isExact: false,
-              text: `Дата неизвестна (${year})`,
               year: parseInt(year, 10),
-              monthIndex: null,
+              monthIndex,
               day: null,
               dateKey: null,
               hasTime: false,
@@ -2127,39 +2117,34 @@
           }
         }
 
-        return {
-          isExact: false,
-          text: 'Дата неизвестна',
-          year: null,
-          monthIndex: null,
-          day: null,
-          dateKey: null,
-          hasTime: false,
-          timeLabel: '',
-        };
+        if (/^\d{4}$/.test(year)) {
+          return {
+            text: 'Дата неизвестна (' + year + ')',
+            isExact: false,
+            year: parseInt(year, 10),
+            monthIndex: null,
+            day: null,
+            dateKey: null,
+            hasTime: false,
+            timeLabel: '',
+          };
+        }
+
+        return emptyResult;
       }
 
       function formatReleaseDate(animeOrIso) {
         if (!animeOrIso) return 'Дата неизвестна';
         if (typeof animeOrIso === 'string') {
-          const raw = animeOrIso.trim();
-          return parseShikiDate(null, raw, raw.includes('T') ? raw : null).text;
+          return getAnimeReleaseInfo(animeOrIso, null).text;
         }
-        const rawNext = animeOrIso.next_episode_at ? String(animeOrIso.next_episode_at).trim() : '';
-        const airedCandidate = animeOrIso.aired_on || animeOrIso.released_on || (!rawNext.includes('T') ? rawNext : null);
-        const nextCandidate = rawNext && rawNext.includes('T') ? rawNext : null;
-        return parseShikiDate(
-          animeOrIso.status || null,
-          airedCandidate,
-          nextCandidate,
-          animeOrIso.episodes_aired ?? null
-        ).text;
+        const rawDate = animeOrIso.next_episode_at || animeOrIso.aired_on || animeOrIso.released_on || null;
+        return getAnimeReleaseInfo(rawDate, animeOrIso.status || null).text;
       }
 
       function formatNextEpisode(isoString, status) {
         if (isoString) {
-          const raw = String(isoString).trim();
-          return parseShikiDate(status, raw, raw.includes('T') ? raw : null).text;
+          return getAnimeReleaseInfo(isoString, status).text;
         }
         if (status === 'released') return 'Сезон завершён';
         return 'Дата неизвестна';
@@ -2232,15 +2217,8 @@
         return `${year}-${m}-${d}`;
       }
 
-      function parseExactReleaseDate(rawValue, status = null, episodesAired = null) {
-        const raw = String(rawValue || '').trim();
-        if (!raw) return null;
-        const parsed = parseShikiDate(
-          status,
-          raw,
-          raw.includes('T') ? raw : null,
-          episodesAired
-        );
+      function parseExactReleaseDate(rawValue, status = null) {
+        const parsed = getAnimeReleaseInfo(rawValue, status);
         if (!parsed.isExact) return null;
         return parsed;
       }
@@ -2254,15 +2232,7 @@
         const monthEnd = new Date(viewYear, viewMonthIndex + 1, 0);
 
         (Array.isArray(trackingItems) ? trackingItems : []).forEach((item) => {
-          const rawStoredDate = item.next_episode_at ? String(item.next_episode_at).trim() : '';
-          const airedCandidate = rawStoredDate || (item.aired_on ? String(item.aired_on).trim() : '') || null;
-          const nextCandidate = rawStoredDate && rawStoredDate.includes('T') ? rawStoredDate : null;
-          const parsed = parseShikiDate(
-            item.status || null,
-            airedCandidate,
-            nextCandidate,
-            item.episodes_aired ?? null
-          );
+          const parsed = getAnimeReleaseInfo(item.next_episode_at, item.status);
           if (!parsed.isExact) return;
 
           const totalEpisodes = Math.max(0, Number(item.episodes) || 0);
@@ -2840,18 +2810,15 @@
                   : 'эп. уточняются';
             const yearLabel = extractReleaseYear(anime);
             const scoreLabel = anime.score && Number(anime.score) > 0 ? `★ ${anime.score}` : '';
-            const shikiDate = parseShikiDate(
-              anime.status,
-              anime.aired_on || anime.released_on || null,
-              anime.next_episode_at || null,
-              anime.episodes_aired
-            );
-            const releasePrefix = anime.next_episode_at
-              ? 'След. серия: '
-              : shikiDate.isExact
-                ? 'Выход: '
-                : '';
-            const releaseDateText = shikiDate.text;
+            const rawReleaseDate = anime.next_episode_at || anime.aired_on || anime.released_on || null;
+            const releaseInfo = getAnimeReleaseInfo(rawReleaseDate, anime.status);
+            const releasePrefix =
+              anime.next_episode_at && releaseInfo.isExact && releaseInfo.hasTime
+                ? 'След. серия: '
+                : releaseInfo.isExact
+                  ? 'Выход: '
+                  : '';
+            const releaseDateText = releaseInfo.text;
             const isTracked = trackedIds.has(String(anime.id));
 
             return `
@@ -2935,13 +2902,7 @@
             const total = Number(item.episodes) || 0;
             const totalLabel = total > 0 ? total : '?';
             const percent = calculateProgressPercent(watched, total);
-            const rawStoredDate = item.next_episode_at ? String(item.next_episode_at).trim() : '';
-            const nextEp = parseShikiDate(
-              item.status,
-              rawStoredDate || item.aired_on || null,
-              rawStoredDate && rawStoredDate.includes('T') ? rawStoredDate : null,
-              item.episodes_aired
-            ).text;
+            const nextEp = getAnimeReleaseInfo(item.next_episode_at, item.status).text;
             const license = item.licensed_by ? item.licensed_by : 'Нет данных';
             const hasDateTracking = Boolean(item.track_date);
             const isDeleting = String(state.pendingDeleteId) === String(item.anime_id);
@@ -3052,15 +3013,10 @@
         if (!isoString) return '';
         const d = new Date(isoString);
         if (Number.isNaN(d.getTime())) return '';
-        try {
-          return new Intl.DateTimeFormat('ru-RU', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-          }).format(d);
-        } catch {
-          return d.toLocaleDateString('ru-RU');
-        }
+        const day = d.getDate();
+        const monthShort = SHIKI_MONTHS_SHORT[d.getMonth()] || '';
+        const year = d.getFullYear();
+        return `${day} ${monthShort} ${year} г.`;
       }
 
       function renderHistory() {
@@ -3419,26 +3375,24 @@
           .map((part) => `<span>${escapeHtml(part)}</span>`)
           .join('<span aria-hidden="true">·</span>');
 
-        const rawAnimeNext = animeData.next_episode_at ? String(animeData.next_episode_at).trim() : '';
-        const rawExistingNext = existingRecord?.next_episode_at ? String(existingRecord.next_episode_at).trim() : '';
-        const nextEpCandidate =
-          (rawAnimeNext && rawAnimeNext.includes('T') ? rawAnimeNext : null) ||
-          (rawExistingNext && rawExistingNext.includes('T') ? rawExistingNext : null) ||
-          null;
-        const airedOnCandidate =
+        const rawReleaseDate =
+          animeData.next_episode_at ||
           animeData.aired_on ||
           animeData.released_on ||
-          (rawAnimeNext && !rawAnimeNext.includes('T') ? rawAnimeNext : null) ||
-          (rawExistingNext && !rawExistingNext.includes('T') ? rawExistingNext : null) ||
+          existingRecord?.next_episode_at ||
           null;
-        const shikiDate = parseShikiDate(
-          statusVal,
-          airedOnCandidate,
-          nextEpCandidate,
-          animeData.episodes_aired ?? existingRecord?.episodes_aired ?? null
+        const releaseInfo = getAnimeReleaseInfo(rawReleaseDate, statusVal);
+        const hasNextEpSource = Boolean(
+          animeData.next_episode_at ||
+            (!animeData.aired_on && !animeData.released_on && existingRecord?.next_episode_at)
         );
-        const prefix = nextEpCandidate ? 'След. серия: ' : shikiDate.isExact ? 'Дата старта: ' : '';
-        el.modalReleaseLine.textContent = prefix + shikiDate.text;
+        const prefix =
+          hasNextEpSource && releaseInfo.isExact && releaseInfo.hasTime
+            ? 'След. серия: '
+            : releaseInfo.isExact
+              ? 'Дата старта: '
+              : '';
+        el.modalReleaseLine.textContent = prefix + releaseInfo.text;
       }
 
       async function openTrackingModal(animeData, existingRecord = null) {
