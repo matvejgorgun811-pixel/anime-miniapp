@@ -43,7 +43,7 @@
 
   <!-- Toast Notification -->
   <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-medium shadow-2xl transition-all duration-300 opacity-0 pointer-events-none">
-    Скопировано для отправки в чат!
+    Скопировано!
   </div>
 
   <!-- Main Content Container -->
@@ -76,7 +76,6 @@
         </form>
       </div>
 
-      <!-- Search Results / Popular ongoing feed -->
       <div>
         <h3 id="search-feed-title" class="text-sm font-bold text-slate-300 mb-3 px-1">🔥 Популярные онгоинги и анонсы</h3>
         <div id="search-results-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -166,6 +165,55 @@
       </div>
     </div>
 
+    <!-- TAB 5: TEAM -->
+    <div id="tab-team" class="space-y-5 hidden">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-bold text-white">Справочник команды</h2>
+          <p id="team-count-label" class="text-xs text-slate-400">Участники озвучки и роли (0)</p>
+        </div>
+
+        <!-- Team Role Filters -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar" id="team-filters">
+          <button onclick="setTeamFilter('all')" data-team-filter="all" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-indigo-600 text-white shadow-md whitespace-nowrap">Все</button>
+          <button onclick="setTeamFilter('actor')" data-team-filter="actor" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-[#151a24] text-slate-400 hover:bg-slate-800 border border-white/[0.08] whitespace-nowrap">🎭 Актеры</button>
+          <button onclick="setTeamFilter('subber')" data-team-filter="subber" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-[#151a24] text-slate-400 hover:bg-slate-800 border border-white/[0.08] whitespace-nowrap">📝 Сабберы</button>
+          <button onclick="setTeamFilter('sound')" data-team-filter="sound" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-[#151a24] text-slate-400 hover:bg-slate-800 border border-white/[0.08] whitespace-nowrap">🎛 Звукари</button>
+        </div>
+      </div>
+
+      <!-- Add Team Member Form (Admin only) -->
+      <div id="team-add-form-container" class="bg-[#151a24] border border-white/[0.08] rounded-2xl p-4 shadow-lg space-y-3.5 hidden">
+        <h3 class="text-sm font-bold text-white">Добавить участника в команду</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="text-[11px] text-slate-400 mb-1 block">Никнейм (например: Вася)</label>
+            <input type="text" id="team-input-nickname" placeholder="Вася" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500" />
+          </div>
+          <div>
+            <label class="text-[11px] text-slate-400 mb-1 block">Telegram @username</label>
+            <input type="text" id="team-input-username" placeholder="@username" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500" />
+          </div>
+          <div>
+            <label class="text-[11px] text-slate-400 mb-1 block">Роль</label>
+            <select id="team-input-role" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <option value="actor">🎭 Актер</option>
+              <option value="subber">📝 Саббер</option>
+              <option value="sound">🎛 Звукарь</option>
+            </select>
+          </div>
+        </div>
+        <button onclick="addTeamMember()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl font-medium text-xs transition shadow-md shadow-indigo-600/30">
+          Добавить в команду
+        </button>
+      </div>
+
+      <!-- Team Members List -->
+      <div id="team-list-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <!-- Rendered via JS -->
+      </div>
+    </div>
+
   </main>
 
   <!-- MODALS -->
@@ -250,9 +298,9 @@
     </div>
   </div>
 
-  <!-- Modal 2: Dub Schedule Setup (With Hashtag support) -->
+  <!-- Modal 2: Dub Schedule Setup (With Team Checkboxes) -->
   <div id="modal-dub" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="bg-[#151a24] border border-white/[0.08] rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+    <div class="bg-[#151a24] border border-white/[0.08] rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between">
         <h3 class="text-lg font-bold text-white">Расписание озвучки</h3>
         <button onclick="closeModal('modal-dub')" class="text-slate-400 hover:text-white">
@@ -260,36 +308,48 @@
         </button>
       </div>
 
-      <div class="space-y-3">
+      <div class="space-y-3.5">
         <div>
           <label class="text-xs font-semibold text-slate-300 mb-1 block">Хештег для сдачи файлов (#hashtag)</label>
           <input type="text" id="dub-hashtag" placeholder="#svadba_svetlyachkov" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono" />
-          <p class="text-[10px] text-slate-400 mt-0.5">Укажите хештег без пробелов, по которому бот будет принимать файлы.</p>
         </div>
-        <div>
-          <label class="text-xs font-semibold text-slate-300 mb-1 block">Стартовая серия для озвучки (start_ep)</label>
-          <input type="number" id="dub-start-ep" min="1" value="1" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500" />
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-semibold text-slate-300 mb-1 block">Стартовая серия (start_ep)</label>
+            <input type="number" id="dub-start-ep" min="1" value="1" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500" />
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-slate-300 mb-1 block">Всего серий</label>
+            <input type="number" id="dub-total-eps" value="12" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500" />
+          </div>
         </div>
         <div>
           <label class="text-xs font-semibold text-slate-300 mb-1 block">Дата и время ближайшей серии</label>
           <input type="datetime-local" id="dub-datetime" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500" />
         </div>
-        <div>
-          <label class="text-xs font-semibold text-slate-300 mb-1 block">Всего серий</label>
-          <input type="number" id="dub-total-eps" value="12" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500" />
+
+        <!-- Team Checkbox Selection Blocks -->
+        <div class="space-y-3 bg-[#0b0e14] p-4 rounded-2xl border border-white/[0.08]">
+          <div>
+            <label class="text-xs font-semibold text-indigo-300 mb-1.5 block">🎭 Выберите актеров</label>
+            <div id="dub-actors-checkboxes" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-indigo-300 mb-1.5 block">📝 Выберите сабберов</label>
+            <div id="dub-subbers-checkboxes" class="flex flex-wrap gap-2 max-h-24 overflow-y-auto p-1">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-indigo-300 mb-1.5 block">🎛 Выберите звукарей</label>
+            <div id="dub-sound-checkboxes" class="flex flex-wrap gap-2 max-h-24 overflow-y-auto p-1">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
         </div>
-        <div>
-          <label class="text-xs font-semibold text-slate-300 mb-1 block">🎭 Актеры озвучки (@username)</label>
-          <input type="text" id="dub-actors" placeholder="@VoiceMaster, @AnyaVA" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500" />
-        </div>
-        <div>
-          <label class="text-xs font-semibold text-slate-300 mb-1 block">📝 Сабберы / Таймеры (@username)</label>
-          <input type="text" id="dub-subbers" placeholder="@SubZero" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500" />
-        </div>
-        <div>
-          <label class="text-xs font-semibold text-slate-300 mb-1 block">🎛 Звукорежиссеры (@username)</label>
-          <input type="text" id="dub-sound" placeholder="@SoundGod" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500" />
-        </div>
+
         <div>
           <label class="text-xs font-semibold text-slate-300 mb-1 block">⏰ Напоминать за (минут) до серии</label>
           <input type="number" id="dub-notify-min" value="30" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500" />
@@ -330,27 +390,38 @@
     </div>
   </div>
 
-  <!-- Modal 4: Admins Management (Owner Only) -->
+  <!-- Modal 4: Admins Management & Saved Groups (Owner Only) -->
   <div id="modal-admins" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-    <div class="bg-[#151a24] border border-white/[0.08] rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+    <div class="bg-[#151a24] border border-white/[0.08] rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between">
-        <h3 class="text-lg font-bold text-white">👥 Управление доступами</h3>
+        <h3 class="text-lg font-bold text-white">👥 Управление доступами и чатами</h3>
         <button onclick="closeModal('modal-admins')" class="text-slate-400 hover:text-white">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
 
-      <p class="text-xs text-slate-400">Добавьте помощника по @username или числовому ID в таблицу team_admins.</p>
-
-      <div class="flex gap-2">
-        <input type="text" id="newAdminInput" placeholder="Введите @username или числовой ID" class="flex-1 bg-[#0b0e14] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500" />
-        <button onclick="addNewAdmin()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl font-medium text-xs transition shadow-md whitespace-nowrap">
-          Выдать права
-        </button>
+      <!-- Block 1: Admins -->
+      <div class="space-y-3">
+        <h4 class="text-xs font-bold text-indigo-300 uppercase tracking-wider">Администраторы бота</h4>
+        <div class="flex gap-2">
+          <input type="text" id="newAdminInput" placeholder="Введите @username или числовой ID" class="flex-1 bg-[#0b0e14] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500" />
+          <button onclick="addNewAdmin()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl font-medium text-xs transition shadow-md whitespace-nowrap">
+            Выдать права
+          </button>
+        </div>
+        <div id="admins-list-container" class="space-y-2 max-h-40 overflow-y-auto">
+          <!-- Rendered via JS -->
+        </div>
       </div>
 
-      <div id="admins-list-container" class="space-y-2 max-h-60 overflow-y-auto">
-        <!-- Rendered via JS -->
+      <hr class="border-white/[0.08]" />
+
+      <!-- Block 2: Saved Groups & Work Chat toggle -->
+      <div class="space-y-3">
+        <h4 class="text-xs font-bold text-indigo-300 uppercase tracking-wider">💬 Группы, в которых состоит бот</h4>
+        <div id="saved-groups-admin-list" class="space-y-2.5 max-h-50 overflow-y-auto">
+          <!-- Rendered via JS -->
+        </div>
       </div>
 
       <button onclick="closeModal('modal-admins')" class="w-full bg-[#0b0e14] hover:bg-slate-850 text-slate-300 py-3 rounded-xl font-medium text-xs transition border border-white/[0.08]">Закрыть</button>
@@ -364,7 +435,7 @@
     </div>
   </div>
 
-  <!-- Modal 6: Instruction Modal -->
+  <!-- Modal 6: Instruction Modal (Updated without hashtags) -->
   <div id="modal-instruction" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 hidden">
     <div class="bg-[#151a24] border border-white/[0.08] rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between">
@@ -378,23 +449,20 @@
 
       <div class="space-y-4 text-xs text-slate-300 leading-relaxed">
         <div class="bg-[#0b0e14] p-3.5 rounded-2xl border border-white/[0.08] space-y-2">
-          <h4 class="font-bold text-indigo-300 text-sm">1. Как сдавать субтитры и дорожки в рабочую группу:</h4>
-          <ul class="list-disc list-inside space-y-1.5 text-slate-300">
-            <li>Загрузите файл в рабочую группу Telegram (Субтитры: <code class="text-indigo-400">.ass</code>, <code class="text-indigo-400">.srt</code>; Дорожки: <code class="text-indigo-400">.wav</code>, <code class="text-indigo-400">.flac</code>, <code class="text-indigo-400">.mp3</code>, <code class="text-indigo-400">.ogg</code>, <code class="text-indigo-400">.zip</code>).</li>
-            <li>В подписи к файлу обязательно укажите <strong>хештег тайтла и номер серии</strong>, например: <code class="text-indigo-400">#название 3</code>.</li>
-            <li>Бот автоматически отметит сдачу, обновит статус на сайте в реальном времени и отправит сводный отчёт руководителю в ЛС.</li>
-            <li>Когда все актеры и сабберы сдадут файлы по серии, бот автоматически тегнет звукаря в чате.</li>
-          </ul>
+          <h4 class="font-bold text-indigo-300 text-sm">🎙 Для актеров озвучки:</h4>
+          <p>Скиньте аудиофайл (<code class="text-indigo-400">.wav</code>, <code class="text-indigo-400">.flac</code>, <code class="text-indigo-400">.mp3</code>, <code class="text-indigo-400">.ogg</code>, <code class="text-indigo-400">.zip</code>) в рабочий чат. Имя файла должно содержать <strong class="text-white">номер серии</strong>, <strong class="text-white">ваш ник</strong> из вкладки «Команда» и <strong class="text-white">название тайтла</strong>.</p>
+          <p class="text-indigo-300 font-mono text-[11px] bg-indigo-950/40 p-2 rounded-xl">Пример: 03 Вася Свадьба светлячков.wav</p>
         </div>
 
         <div class="bg-[#0b0e14] p-3.5 rounded-2xl border border-white/[0.08] space-y-2">
-          <h4 class="font-bold text-indigo-300 text-sm">2. Как отслеживать график озвучки:</h4>
-          <p>Перейдите во вкладку <strong class="text-white">«Календарь»</strong> и переключитесь на режим <strong class="text-white">«График озвучки»</strong>. Вы увидите расписание всех серий на каждый день, статус сдачи дорожек и субтитров.</p>
+          <h4 class="font-bold text-indigo-300 text-sm">📝 Для сабберов:</h4>
+          <p>Скиньте файл субтитров (<code class="text-indigo-400">.ass</code>, <code class="text-indigo-400">.srt</code>) в рабочий чат. Имя файла должно содержать <strong class="text-white">номер серии</strong> и <strong class="text-white">название тайтла</strong>.</p>
+          <p class="text-indigo-300 font-mono text-[11px] bg-indigo-950/40 p-2 rounded-xl">Пример: 03 Свадьба светлячков.ass</p>
         </div>
 
         <div class="bg-[#0b0e14] p-3.5 rounded-2xl border border-white/[0.08] space-y-2">
-          <h4 class="font-bold text-indigo-300 text-sm">3. Важная памятка для участников:</h4>
-          <p>Обязательно нажмите команду <code class="text-indigo-400">/start</code> в нашем Telegram-боте, чтобы бот мог присылать вам личные напоминания о выходе серий и дедлайнах.</p>
+          <h4 class="font-bold text-indigo-300 text-sm">🤖 Автоматическая проверка:</h4>
+          <p>Подписи к файлам и хештеги писать НЕ нужно — бот сам распознает имя файла, отметит сдачу, пришлет отчёт руководителю в ЛС и тегнет звукаря, когда все файлы по серии будут готовы.</p>
         </div>
       </div>
 
@@ -404,7 +472,7 @@
     </div>
   </div>
 
-  <!-- Bottom Navigation Bar -->
+  <!-- Bottom Navigation Bar (5 Tabs) -->
   <nav class="fixed bottom-0 left-0 right-0 z-40 bg-[#151a24]/95 backdrop-blur-md border-t border-white/[0.08] px-4 py-2" style="padding-bottom: env(safe-area-inset-bottom);">
     <div class="max-w-md mx-auto flex justify-around">
       <button onclick="switchTab('search')" id="nav-search" class="flex flex-col items-center py-1.5 px-3 rounded-2xl transition text-indigo-400 bg-indigo-600/10">
@@ -422,6 +490,10 @@
       <button onclick="switchTab('history')" id="nav-history" class="flex flex-col items-center py-1.5 px-3 rounded-2xl transition text-slate-400 hover:text-slate-200">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
         <span class="text-[11px] font-medium mt-1">История</span>
+      </button>
+      <button onclick="switchTab('team')" id="nav-team" class="flex flex-col items-center py-1.5 px-3 rounded-2xl transition text-slate-400 hover:text-slate-200">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span class="text-[11px] font-medium mt-1">Команда</span>
       </button>
     </div>
   </nav>
@@ -470,7 +542,7 @@
     }
 
     // TOAST NOTIFICATION HELPER
-    function showToast(message = "Скопировано для отправки в чат!") {
+    function showToast(message = "Скопировано!") {
       const toast = document.getElementById('toast');
       toast.innerText = message;
       toast.classList.remove('opacity-0', 'pointer-events-none');
@@ -603,10 +675,12 @@
       isOwner: false,
       teamAdmins: [],
       savedGroups: [],
+      teamMembers: [],
       dubSubmissions: [],
       activeTab: 'search',
       calendarMode: 'general',
       filterTracking: 'all',
+      filterTeam: 'all',
       searchResults: [],
       trackingList: [],
       dubScheduleList: [],
@@ -642,6 +716,9 @@
 
         const { data: groups } = await supabaseClient.from('saved_groups').select('*');
         if (groups) state.savedGroups = groups;
+
+        const { data: members } = await supabaseClient.from('team_members').select('*');
+        if (members) state.teamMembers = members;
 
         const { data: subs } = await supabaseClient.from('dub_submissions').select('*');
         if (subs) state.dubSubmissions = subs;
@@ -687,10 +764,10 @@
       }
     }
 
-    // SWITCH TABS
+    // SWITCH TABS (5 Tabs including Team)
     function switchTab(tabId) {
       state.activeTab = tabId;
-      ['search', 'tracking', 'calendar', 'history'].forEach(t => {
+      ['search', 'tracking', 'calendar', 'history', 'team'].forEach(t => {
         document.getElementById(`tab-${t}`).classList.add('hidden');
         const navBtn = document.getElementById(`nav-${t}`);
         navBtn.className = "flex flex-col items-center py-1.5 px-3 rounded-2xl transition text-slate-400 hover:text-slate-200";
@@ -705,6 +782,7 @@
       if (tabId === 'tracking') renderTracking();
       if (tabId === 'calendar') renderCalendarWidget();
       if (tabId === 'history') renderHistory();
+      if (tabId === 'team') renderTeam();
     }
 
     // INSTRUCTION MODAL
@@ -906,7 +984,7 @@
       
       state.savedGroups.forEach(g => {
         const isSel = String(g.chat_id) === String(selectedChatId);
-        html += `<option value="${g.chat_id}" ${isSel ? 'selected' : ''}>${g.title} (${g.chat_id})</option>`;
+        html += `<option value="${g.chat_id}" ${isSel ? 'selected' : ''}>${g.title} (${g.chat_id}) ${g.is_work_chat ? '⭐ [Рабочий чат]' : ''}</option>`;
       });
 
       html += `<option value="manual">+ Ввести новый ID группы вручную</option>`;
@@ -959,7 +1037,8 @@
           try {
             const { data: newGroupData } = await supabaseClient.from('saved_groups').insert({
               title: titleToSave,
-              chat_id: targetGroupId
+              chat_id: targetGroupId,
+              is_work_chat: false
             }).select();
             if (newGroupData && newGroupData[0]) {
               state.savedGroups.push(newGroupData[0]);
@@ -1159,7 +1238,7 @@
       }
     }
 
-    // TAB 3: CALENDAR & DUB SCHEDULE WITH SUBMISSIONS TRACKING
+    // TAB 3: CALENDAR & DUB SCHEDULE WITH SUBMISSIONS & TEAM CHECKBOXES
     function setCalendarMode(mode) {
       state.calendarMode = mode;
       document.getElementById('cal-mode-general').className = `flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs font-medium ${mode === 'general' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}`;
@@ -1306,18 +1385,19 @@
         }
 
         container.innerHTML = list.map(ep => {
-          // Check submissions for this anime_id and episode_number
           const epSubs = state.dubSubmissions.filter(s => Number(s.anime_id) === Number(ep.anime_id) && Number(s.ep_num) === Number(ep.episode_number));
-          const audioSubs = epSubs.filter(s => s.file_type === 'audio');
-          const subSubs = epSubs.find(s => s.file_type === 'sub');
+          const subSubmitted = epSubs.some(s => s.file_type === 'subs');
 
-          // Assuming 3 actors or channels for tracks, or count unique/total
-          const audioCount = audioSubs.length;
-          const audioStatusText = `Дороги: ${audioCount}/3 ${audioCount >= 3 ? '✅' : '⏳'}`;
-          const subStatusText = `Сабы: ${subSubs ? '✅' : '⏳'}`;
+          // Parse assigned actors
+          const assignedActors = (ep.actors || '').split(/[\s,@]+/).filter(Boolean);
+          const actorProgressHtml = assignedActors.map(act => {
+            const memberObj = state.teamMembers.find(m => m.username && m.username.toLowerCase() === act.toLowerCase());
+            const nickName = memberObj ? memberObj.nickname : act;
+            const hasSubmitted = epSubs.some(s => s.file_type === 'actor' && (String(s.username).toLowerCase() === act.toLowerCase() || (memberObj && String(s.username).toLowerCase() === memberObj.nickname.toLowerCase())));
+            return `<span class="${hasSubmitted ? 'text-emerald-400 font-medium' : 'text-slate-400'}">${hasSubmitted ? '✅' : '⏳'} ${nickName}</span>`;
+          }).join(' • ');
 
-          const hashtag = ep.hashtag ? `#${ep.hashtag.replace(/^#/, '')}` : `#${transliterate(ep.title)}`;
-          const copyText = `${hashtag} ${ep.episode_number}`;
+          const subStatusText = `📝 Сабы: ${subSubmitted ? '✅' : '⏳'}`;
 
           return `
             <div class="bg-[#151a24] border border-white/[0.08] rounded-2xl p-3.5 flex space-x-3.5 shadow-md">
@@ -1329,22 +1409,21 @@
                     <span class="text-[10px] font-bold bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full shrink-0">Серия ${ep.episode_number} из ${ep.total_episodes}</span>
                   </div>
 
-                  <!-- Hashtag clickable badge -->
-                  <div class="mt-1.5 flex items-center space-x-2">
-                    <button onclick="copyToClipboard('${copyText}')" class="px-2 py-0.5 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-[11px] font-mono text-indigo-300 hover:bg-indigo-500/25 transition flex items-center space-x-1" title="Нажмите, чтобы скопировать для чата">
-                      <span>📌 ${copyText}</span>
-                    </button>
-                    <span class="text-[10px] text-slate-400">${audioStatusText} • ${subStatusText}</span>
+                  <!-- Submission Progress Display -->
+                  <div class="mt-2 space-y-1 bg-[#0b0e14] p-2.5 rounded-xl border border-white/[0.08] text-[11px]">
+                    <div class="flex items-center justify-between">
+                      <span class="text-slate-300 font-medium">🎭 Актеры:</span>
+                      <div class="flex flex-wrap gap-1.5">${actorProgressHtml || '<span class="text-slate-500">Не назначены</span>'}</div>
+                    </div>
+                    <div class="flex items-center justify-between pt-1 border-t border-white/[0.05]">
+                      <span class="text-slate-300 font-medium">Субтитры:</span>
+                      <span class="${subSubmitted ? 'text-emerald-400 font-medium' : 'text-slate-400'}">${subStatusText}</span>
+                    </div>
                   </div>
 
                   <div class="mt-1.5 flex items-center space-x-1.5 text-[11px] text-indigo-300">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                     <span>Время выхода: ${ep.time_str}</span>
-                  </div>
-                  <div class="mt-1.5 text-[11px] text-slate-300 space-y-0.5">
-                    ${ep.actors ? `<p>🎭 Актеры: <span class="text-slate-100 font-medium">${ep.actors}</span></p>` : ''}
-                    ${ep.subbers ? `<p>📝 Сабберы: <span class="text-slate-100 font-medium">${ep.subbers}</span></p>` : ''}
-                    ${ep.sound_engineers ? `<p>🎛 Звукари: <span class="text-slate-100 font-medium">${ep.sound_engineers}</span></p>` : ''}
                   </div>
                 </div>
 
@@ -1373,7 +1452,6 @@
       const existingDub = state.dubScheduleList.find(d => Number(d.anime_id) === Number(animeId));
       state.dubModalAnime = item;
 
-      // Auto-fill hashtag transliterated from title if not present
       const defaultHashtag = existingDub ? existingDub.hashtag : transliterate(item.title);
       document.getElementById('dub-hashtag').value = defaultHashtag;
 
@@ -1396,12 +1474,39 @@
 
       document.getElementById('dub-datetime').value = defaultDateTime;
       document.getElementById('dub-total-eps').value = existingDub ? existingDub.total_episodes : (item.episodes || 12);
-      document.getElementById('dub-actors').value = existingDub ? existingDub.actors : '';
-      document.getElementById('dub-subbers').value = existingDub ? existingDub.subbers : '';
-      document.getElementById('dub-sound').value = existingDub ? existingDub.sound_engineers : '';
       document.getElementById('dub-notify-min').value = existingDub ? existingDub.notify_before_min : 30;
 
+      // Populate Team Checkboxes
+      const selectedActors = existingDub ? (existingDub.actors || '').split(/[\s,@]+/).filter(Boolean) : [];
+      const selectedSubbers = existingDub ? (existingDub.subbers || '').split(/[\s,@]+/).filter(Boolean) : [];
+      const selectedSound = existingDub ? (existingDub.sound_engineers || '').split(/[\s,@]+/).filter(Boolean) : [];
+
+      renderTeamCheckboxes('dub-actors-checkboxes', 'actor', selectedActors);
+      renderTeamCheckboxes('dub-subbers-checkboxes', 'subber', selectedSubbers);
+      renderTeamCheckboxes('dub-sound-checkboxes', 'sound', selectedSound);
+
       document.getElementById('modal-dub').classList.remove('hidden');
+    }
+
+    function renderTeamCheckboxes(containerId, role, selectedList) {
+      const container = document.getElementById(containerId);
+      const members = state.teamMembers.filter(m => m.role === role);
+
+      if (members.length === 0) {
+        container.innerHTML = `<span class="text-[11px] text-slate-500">Нет участников с ролью ${role}</span>`;
+        return;
+      }
+
+      container.innerHTML = members.map(m => {
+        const usernameClean = (m.username || '').replace(/^@/, '').toLowerCase();
+        const isChecked = selectedList.some(s => s.toLowerCase() === usernameClean || s.toLowerCase() === m.nickname.toLowerCase());
+        return `
+          <label class="flex items-center space-x-1.5 bg-[#151a24] px-2.5 py-1.5 rounded-xl border border-white/[0.08] cursor-pointer text-xs">
+            <input type="checkbox" name="dub_team_${role}" value="${m.username ? '@' + m.username.replace(/^@/, '') : m.nickname}" ${isChecked ? 'checked' : ''} class="w-3.5 h-3.5 rounded text-indigo-600 bg-[#0b0e14] border-white/20" />
+            <span class="text-slate-200">${m.nickname} <span class="text-[10px] text-slate-400">(@${m.username || 'none'})</span></span>
+          </label>
+        `;
+      }).join('');
     }
 
     async function saveDubScheduleFromModal() {
@@ -1409,6 +1514,11 @@
       if (!item) return;
 
       const hashtagInput = document.getElementById('dub-hashtag').value.trim().replace(/^#/, '');
+
+      const getCheckedValues = (name) => {
+        const checkboxes = document.querySelectorAll(`input[name="${name}"]:checked`);
+        return Array.from(checkboxes).map(cb => cb.value).join(' ');
+      };
 
       const dubRecord = {
         anime_id: Number(item.anime_id),
@@ -1418,9 +1528,9 @@
         start_ep: parseInt(document.getElementById('dub-start-ep').value) || 1,
         first_ep_date: document.getElementById('dub-datetime').value,
         total_episodes: parseInt(document.getElementById('dub-total-eps').value) || 12,
-        actors: document.getElementById('dub-actors').value,
-        subbers: document.getElementById('dub-subbers').value,
-        sound_engineers: document.getElementById('dub-sound').value,
+        actors: getCheckedValues('dub_team_actor'),
+        subbers: getCheckedValues('dub_team_subber'),
+        sound_engineers: getCheckedValues('dub_team_sound'),
         notify_before_min: parseInt(document.getElementById('dub-notify-min').value) || 30,
         notify_target: 'group',
         last_notified_ep: 0
@@ -1522,17 +1632,117 @@
       } catch (e) {}
     }
 
-    // 👥 ACCESS MODAL (OWNER ONLY)
+    // TAB 5: TEAM MEMBERS DIRECTORY
+    function setTeamFilter(filterId) {
+      state.filterTeam = filterId;
+      document.querySelectorAll('#team-filters button').forEach(btn => {
+        if (btn.getAttribute('data-team-filter') === filterId) {
+          btn.className = "px-3 py-1.5 rounded-xl text-xs font-medium bg-indigo-600 text-white shadow-md whitespace-nowrap";
+        } else {
+          btn.className = "px-3 py-1.5 rounded-xl text-xs font-medium bg-[#151a24] text-slate-400 hover:bg-slate-800 border border-white/[0.08] whitespace-nowrap";
+        }
+      });
+      renderTeam();
+    }
+
+    function renderTeam() {
+      const container = document.getElementById('team-list-container');
+      const formContainer = document.getElementById('team-add-form-container');
+
+      if (state.isAdmin) {
+        formContainer.classList.remove('hidden');
+      } else {
+        formContainer.classList.add('hidden');
+      }
+
+      const filtered = state.teamMembers.filter(m => {
+        if (state.filterTeam === 'all') return true;
+        return m.role === state.filterTeam;
+      });
+
+      document.getElementById('team-count-label').innerText = `Участники озвучки и роли (${filtered.length})`;
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="text-center py-16 text-slate-500 col-span-full text-xs"><p>Участники не найдены</p></div>`;
+        return;
+      }
+
+      const roleLabels = { actor: '🎭 Актер', subber: '📝 Саббер', sound: '🎛 Звукарь' };
+      const roleBadges = {
+        actor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+        subber: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+        sound: 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+      };
+
+      container.innerHTML = filtered.map(m => `
+        <div class="bg-[#151a24] border border-white/[0.08] rounded-2xl p-4 flex items-center justify-between shadow-md">
+          <div class="space-y-1">
+            <div class="flex items-center space-x-2">
+              <h4 class="font-bold text-xs text-white">${m.nickname}</h4>
+              <span class="text-[10px] px-2 py-0.5 rounded-full uppercase font-bold border ${roleBadges[m.role] || 'bg-slate-800 text-slate-300'}">${roleLabels[m.role] || m.role}</span>
+            </div>
+            <p class="text-[11px] text-indigo-300 font-mono">@${m.username || 'nouser'}</p>
+          </div>
+          ${state.isAdmin ? `
+            <button onclick="deleteTeamMember('${m.id}')" class="text-rose-400 hover:text-rose-300 p-1.5 rounded-lg bg-rose-600/15 transition">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+          ` : ''}
+        </div>
+      `).join('');
+    }
+
+    async function addTeamMember() {
+      const nickname = document.getElementById('team-input-nickname').value.trim();
+      const username = document.getElementById('team-input-username').value.trim().replace(/^@/, '').toLowerCase();
+      const role = document.getElementById('team-input-role').value;
+
+      if (!nickname || !username) {
+        alert('Заполните никнейм и @username участника!');
+        return;
+      }
+
+      const payload = { nickname, username, role };
+
+      try {
+        const { data, error } = await supabaseClient.from('team_members').insert(payload).select();
+        if (error) throw error;
+
+        if (data && data[0]) {
+          state.teamMembers.push(data[0]);
+        }
+
+        document.getElementById('team-input-nickname').value = '';
+        document.getElementById('team-input-username').value = '';
+        renderTeam();
+        showToast('Участник добавлен в команду!');
+      } catch (err) {
+        alert('Ошибка добавления участника: ' + err.message);
+      }
+    }
+
+    async function deleteTeamMember(id) {
+      if (!confirm('Удалить участника из команды?')) return;
+      state.teamMembers = state.teamMembers.filter(m => String(m.id) !== String(id));
+      renderTeam();
+
+      try {
+        await supabaseClient.from('team_members').delete().match({ id });
+      } catch (e) {}
+    }
+
+    // 👥 ACCESS MODAL & SAVED GROUPS (WithOwner & Work chat toggle)
     function openAccessModal() {
       if (!state.isOwner) return;
       renderAdminsList();
+      renderSavedGroupsAdminList();
       document.getElementById('modal-admins').classList.remove('hidden');
     }
 
     function renderAdminsList() {
       const container = document.getElementById('admins-list-container');
       if (state.teamAdmins.length === 0) {
-        container.innerHTML = `<div class="text-center py-6 text-slate-500 text-xs">Нет выданных прав администратора</div>`;
+        container.innerHTML = `<div class="text-center py-4 text-slate-500 text-xs">Нет выданных прав администратора</div>`;
         return;
       }
 
@@ -1546,6 +1756,51 @@
           </button>
         </div>
       `).join('');
+    }
+
+    function renderSavedGroupsAdminList() {
+      const container = document.getElementById('saved-groups-admin-list');
+      if (state.savedGroups.length === 0) {
+        container.innerHTML = `<div class="text-center py-6 text-slate-500 text-xs">Бот еще не добавлен ни в одну группу или не получил сообщения</div>`;
+        return;
+      }
+
+      container.innerHTML = state.savedGroups.map(g => `
+        <div class="bg-[#0b0e14] p-3 rounded-2xl border border-white/[0.08] flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <h5 class="font-bold text-xs text-white line-clamp-1">${g.title}</h5>
+            <div class="flex items-center space-x-2 mt-1">
+              <span class="text-[11px] font-mono text-indigo-300">${g.chat_id}</span>
+              <button onclick="copyToClipboard('${g.chat_id}')" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded hover:bg-slate-700">Копировать ID</button>
+            </div>
+          </div>
+          <button onclick="toggleWorkChat('${g.id}', ${!g.is_work_chat})" class="px-3 py-1.5 rounded-xl text-xs font-semibold transition shrink-0 ${
+            g.is_work_chat ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 border border-white/[0.08]'
+          }">
+            ${g.is_work_chat ? '🎙 Рабочий чат ⭐' : 'Сделать рабочим'}
+          </button>
+        </div>
+      `).join('');
+    }
+
+    async function toggleWorkChat(groupId, makeWork) {
+      // If setting this to work chat, unset others
+      if (makeWork) {
+        state.savedGroups = state.savedGroups.map(g => ({ ...g, is_work_chat: String(g.id) === String(groupId) }));
+      } else {
+        state.savedGroups = state.savedGroups.map(g => String(g.id) === String(groupId) ? { ...g, is_work_chat: false } : g);
+      }
+      renderSavedGroupsAdminList();
+
+      try {
+        if (makeWork) {
+          await supabaseClient.from('saved_groups').update({ is_work_chat: false }).neq('id', groupId);
+        }
+        await supabaseClient.from('saved_groups').update({ is_work_chat: makeWork }).match({ id: groupId });
+        showToast('Статус рабочего чата обновлен!');
+      } catch (e) {
+        console.warn("Error updating work chat status:", e);
+      }
     }
 
     async function addNewAdmin() {
