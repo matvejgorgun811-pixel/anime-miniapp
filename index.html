@@ -1060,6 +1060,31 @@
         transform: translateY(0);
       }
 
+      .error-message-box {
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: var(--danger-bg);
+        border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
+        color: var(--danger);
+        font-family: var(--font-mono);
+        font-size: 13px;
+        line-height: 1.45;
+        word-break: break-word;
+        white-space: pre-wrap;
+        user-select: text;
+      }
+
+      .error-hint-text {
+        margin: 10px 0 0;
+        font-size: 12px;
+        color: var(--text-muted);
+        line-height: 1.45;
+      }
+
+      #errorModal {
+        z-index: 100;
+      }
+
       .hidden {
         display: none !important;
       }
@@ -1333,9 +1358,9 @@
           <div class="form-section">
             <span class="form-section-label">Куда отправлять уведомления</span>
             <div class="segmented-control" role="radiogroup" aria-label="Место уведомлений">
-              <button type="button" class="segmented-btn active" data-target="личка" aria-checked="true">Личка</button>
-              <button type="button" class="segmented-btn" data-target="группа" aria-checked="false">Группа</button>
-              <button type="button" class="segmented-btn" data-target="везде" aria-checked="false">Везде</button>
+              <button type="button" class="segmented-btn active" data-target="dm" aria-checked="true">Личка</button>
+              <button type="button" class="segmented-btn" data-target="group" aria-checked="false">Группа</button>
+              <button type="button" class="segmented-btn" data-target="both" aria-checked="false">Везде</button>
             </div>
           </div>
 
@@ -1394,6 +1419,42 @@
       </div>
     </div>
 
+    <!-- Technical Error Popup Modal (shows real Supabase error.message) -->
+    <div
+      id="errorModal"
+      class="modal-backdrop"
+      hidden
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="errorModalTitle"
+      aria-describedby="errorModalMessage"
+    >
+      <div class="modal-sheet">
+        <div class="sheet-handle" aria-hidden="true"></div>
+        <div class="modal-head">
+          <div>
+            <h3 id="errorModalTitle" class="modal-title">Ошибка базы данных</h3>
+            <div class="meta-line">Технический ответ Supabase</div>
+          </div>
+          <button id="errorModalCloseBtn" type="button" class="modal-close" aria-label="Закрыть окно ошибки">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div id="errorModalMessage" class="error-message-box"></div>
+        <p class="error-hint-text">
+          Проверьте <code>SUPABASE_URL</code>, <code>SUPABASE_KEY</code>, названия колонок таблиц <code>tracking</code> / <code>history</code> и политики RLS в Supabase.
+        </p>
+
+        <div class="modal-actions">
+          <button id="errorModalOkBtn" type="button" class="btn-primary">Понятно</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Toast -->
     <div class="toast-wrap" aria-live="polite">
       <div id="toastMsg" class="toast-msg"></div>
@@ -1402,23 +1463,20 @@
     <script>
       // =========================================================================
       // КОНФИГУРАЦИЯ SUPABASE
-      // Замените значения на URL и anon/public ключ вашего проекта Supabase.
-      // Схема таблиц:
-      //   tracking: id, user_id, anime_id, anime_title, anime_name_orig,
-      //     poster_url, episodes_watched, episodes_total, episodes_aired,
-      //     next_episode_at, licensed_by, status, track_episodes, track_status,
-      //     track_license, track_date, notify_target, updated_at
-      //   history: id, user_id, anime_id, anime_title, poster_url,
-      //     episodes_watched, episodes_total, score, note, completed_at
+      // Строгая схема таблиц:
+      //   tracking: user_id, anime_id, title, poster, status, episodes,
+      //     episodes_aired, next_episode_at, licensed_by, track_episodes,
+      //     track_status, track_license, track_date, notify_target, watched_episodes
+      //   history: user_id, anime_id, title, poster, rating, note, finished_at
       // =========================================================================
-      const SUPABASE_URL = 'https://ztdddyjdzrjybwwjmksv.supabase.co/rest/v1/';
-      const SUPABASE_KEY = 'sb_publishable_mM0RHaRg5JzcLCdBRFWTeg_rerDn153';
+      const SUPABASE_URL = 'https://supabase.co';
+      const SUPABASE_KEY = 'ВСТАВЬ_СЮДА_СВОЙ_КЛЮЧ_sb_publishable_...';
 
       const SHIKIMORI_API_BASE = 'https://shikimori.io';
       const SHIKIMORI_MIRROR_BASE = 'https://shikimori.io';
 
       // =========================================================================
-      // ЧИСТЫЕ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (Форматирование, URL, валидация)
+      // ЧИСТЫЕ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (Форматирование, URL, валидация, схемы)
       // =========================================================================
       function isSupabaseConfigured(url, key) {
         return Boolean(
@@ -1426,6 +1484,7 @@
             key &&
             !url.includes('YOUR_PROJECT_ID') &&
             !key.includes('YOUR_SUPABASE_ANON_KEY') &&
+            !key.includes('ВСТАВЬ_СЮДА_СВОЙ_КЛЮЧ') &&
             url.startsWith('https://')
         );
       }
@@ -1449,6 +1508,85 @@
         const name = err.name && err.name !== 'Error' ? `${err.name}: ` : '';
         const message = err.message ? String(err.message) : String(err);
         return `${name}${message}`.trim() || 'Неизвестная ошибка запроса';
+      }
+
+      function formatSupabaseError(err) {
+        if (!err) return 'Неизвестная ошибка Supabase';
+        if (typeof err === 'string') return err;
+        const parts = [];
+        if (err.message) parts.push(String(err.message));
+        if (err.code) parts.push(`code: ${err.code}`);
+        if (err.details) parts.push(`details: ${err.details}`);
+        if (err.hint) parts.push(`hint: ${err.hint}`);
+        if (parts.length > 0) return parts.join('\n');
+        try {
+          return JSON.stringify(err);
+        } catch {
+          return String(err);
+        }
+      }
+
+      function normalizeNotifyTarget(target) {
+        const val = String(target || '').trim().toLowerCase();
+        if (val === 'dm' || val === 'личка') return 'dm';
+        if (val === 'group' || val === 'группа') return 'group';
+        if (val === 'both' || val === 'везде') return 'both';
+        return 'dm';
+      }
+
+      function formatNotifyTarget(target) {
+        const normalized = normalizeNotifyTarget(target);
+        if (normalized === 'group') return 'группа';
+        if (normalized === 'both') return 'везде';
+        return 'личка';
+      }
+
+      function buildTrackingPayload({
+        userId,
+        animeId,
+        title,
+        poster,
+        status,
+        episodes,
+        episodesAired,
+        nextEpisodeAt,
+        licensedBy,
+        trackEpisodes,
+        trackStatus,
+        trackLicense,
+        trackDate,
+        notifyTarget,
+        watchedEpisodes,
+      }) {
+        return {
+          user_id: Number(userId),
+          anime_id: Number(animeId),
+          title: String(title || 'Без названия'),
+          poster: String(poster || ''),
+          status: String(status || 'ongoing'),
+          episodes: Math.max(0, Number(episodes) || 0),
+          episodes_aired: Math.max(0, Number(episodesAired) || 0),
+          next_episode_at: nextEpisodeAt ? String(nextEpisodeAt) : null,
+          licensed_by: String(licensedBy || ''),
+          track_episodes: Boolean(trackEpisodes),
+          track_status: Boolean(trackStatus),
+          track_license: Boolean(trackLicense),
+          track_date: Boolean(trackDate),
+          notify_target: normalizeNotifyTarget(notifyTarget),
+          watched_episodes: Math.max(0, Number(watchedEpisodes) || 0),
+        };
+      }
+
+      function buildHistoryPayload({ userId, animeId, title, poster, rating, note, finishedAt }) {
+        return {
+          user_id: Number(userId),
+          anime_id: Number(animeId),
+          title: String(title || 'Без названия'),
+          poster: String(poster || ''),
+          rating: normalizeScore(rating) ?? 8,
+          note: String(note || ''),
+          finished_at: finishedAt ? String(finishedAt) : new Date().toISOString(),
+        };
       }
 
       function formatAnimeKind(kind) {
@@ -1581,7 +1719,10 @@
       }
 
       const rawUserId = tg?.initDataUnsafe?.user?.id ?? null;
-      const currentUserId = rawUserId !== null && rawUserId !== undefined ? String(rawUserId) : '';
+      const currentUserId =
+        rawUserId !== null && rawUserId !== undefined && Number.isFinite(Number(rawUserId))
+          ? Number(rawUserId)
+          : null;
 
       // =========================================================================
       // КЛИЕНТ SUPABASE + ХРАНИЛИЩЕ
@@ -1624,8 +1765,7 @@
             const { data, error } = await supabaseClient
               .from('tracking')
               .select('*')
-              .eq('user_id', userId)
-              .order('updated_at', { ascending: false });
+              .eq('user_id', Number(userId));
             if (error) throw error;
             return data || [];
           }
@@ -1637,42 +1777,36 @@
             const { data, error } = await supabaseClient
               .from('tracking')
               .upsert(record, { onConflict: 'user_id,anime_id' })
-              .select()
-              .single();
+              .select();
             if (error) throw error;
-            return data;
+            return (data && data[0]) || record;
           }
           const rows = getLocalData('tracking', record.user_id);
           const idx = rows.findIndex((r) => String(r.anime_id) === String(record.anime_id));
-          const saved = {
-            ...record,
-            id: idx >= 0 ? rows[idx].id : `${record.user_id}_${record.anime_id}`,
-          };
           if (idx >= 0) {
-            rows[idx] = saved;
+            rows[idx] = { ...record };
           } else {
-            rows.unshift(saved);
+            rows.unshift({ ...record });
           }
           setLocalData('tracking', record.user_id, rows);
-          return saved;
+          return record;
         },
 
         async updateTrackingByAnime(userId, animeId, patch) {
           if (supabaseClient) {
             const { data, error } = await supabaseClient
               .from('tracking')
-              .update({ ...patch, updated_at: new Date().toISOString() })
-              .eq('user_id', userId)
-              .eq('anime_id', animeId)
-              .select()
-              .single();
+              .update(patch)
+              .eq('user_id', Number(userId))
+              .eq('anime_id', Number(animeId))
+              .select();
             if (error) throw error;
-            return data;
+            return (data && data[0]) || null;
           }
           const rows = getLocalData('tracking', userId);
           const idx = rows.findIndex((r) => String(r.anime_id) === String(animeId));
           if (idx >= 0) {
-            rows[idx] = { ...rows[idx], ...patch, updated_at: new Date().toISOString() };
+            rows[idx] = { ...rows[idx], ...patch };
             setLocalData('tracking', userId, rows);
             return rows[idx];
           }
@@ -1684,8 +1818,8 @@
             const { error } = await supabaseClient
               .from('tracking')
               .delete()
-              .eq('user_id', userId)
-              .eq('anime_id', animeId);
+              .eq('user_id', Number(userId))
+              .eq('anime_id', Number(animeId));
             if (error) throw error;
             return;
           }
@@ -1701,8 +1835,8 @@
             const { data, error } = await supabaseClient
               .from('history')
               .select('*')
-              .eq('user_id', userId)
-              .order('completed_at', { ascending: false });
+              .eq('user_id', Number(userId))
+              .order('finished_at', { ascending: false });
             if (error) throw error;
             return data || [];
           }
@@ -1714,24 +1848,19 @@
             const { data, error } = await supabaseClient
               .from('history')
               .upsert(record, { onConflict: 'user_id,anime_id' })
-              .select()
-              .single();
+              .select();
             if (error) throw error;
-            return data;
+            return (data && data[0]) || record;
           }
           const rows = getLocalData('history', record.user_id);
           const idx = rows.findIndex((r) => String(r.anime_id) === String(record.anime_id));
-          const saved = {
-            ...record,
-            id: idx >= 0 ? rows[idx].id : `${record.user_id}_${record.anime_id}`,
-          };
           if (idx >= 0) {
-            rows[idx] = saved;
+            rows[idx] = { ...record };
           } else {
-            rows.unshift(saved);
+            rows.unshift({ ...record });
           }
           setLocalData('history', record.user_id, rows);
-          return saved;
+          return record;
         },
 
         async updateHistory(userId, animeId, patch) {
@@ -1739,12 +1868,11 @@
             const { data, error } = await supabaseClient
               .from('history')
               .update(patch)
-              .eq('user_id', userId)
-              .eq('anime_id', animeId)
-              .select()
-              .single();
+              .eq('user_id', Number(userId))
+              .eq('anime_id', Number(animeId))
+              .select();
             if (error) throw error;
-            return data;
+            return (data && data[0]) || null;
           }
           const rows = getLocalData('history', userId);
           const idx = rows.findIndex((r) => String(r.anime_id) === String(animeId));
@@ -1761,8 +1889,8 @@
             const { error } = await supabaseClient
               .from('history')
               .delete()
-              .eq('user_id', userId)
-              .eq('anime_id', animeId);
+              .eq('user_id', Number(userId))
+              .eq('anime_id', Number(animeId));
             if (error) throw error;
             return;
           }
@@ -1823,7 +1951,7 @@
         modalAnime: null,
         modalDetail: null,
         modalWatched: 0,
-        modalNotifyTarget: 'личка',
+        modalNotifyTarget: 'dm',
         moveTargetItem: null,
         moveScore: 8,
       };
@@ -1874,6 +2002,11 @@
         moveHistoryForm: document.getElementById('moveHistoryForm'),
         moveScoreGrid: document.getElementById('moveScoreGrid'),
         moveNoteInput: document.getElementById('moveNoteInput'),
+        errorModal: document.getElementById('errorModal'),
+        errorModalTitle: document.getElementById('errorModalTitle'),
+        errorModalMessage: document.getElementById('errorModalMessage'),
+        errorModalCloseBtn: document.getElementById('errorModalCloseBtn'),
+        errorModalOkBtn: document.getElementById('errorModalOkBtn'),
         toastMsg: document.getElementById('toastMsg'),
       };
 
@@ -1886,6 +2019,22 @@
         toastTimer = setTimeout(() => {
           el.toastMsg.classList.remove('visible');
         }, 2600);
+      }
+
+      function showErrorPopup(title, err) {
+        if (el.toastMsg) {
+          clearTimeout(toastTimer);
+          el.toastMsg.classList.remove('visible');
+        }
+        if (!el.errorModal) return;
+        el.errorModalTitle.textContent = title || 'Ошибка базы данных';
+        el.errorModalMessage.textContent = formatSupabaseError(err);
+        el.errorModal.hidden = false;
+      }
+
+      function closeErrorPopup() {
+        if (!el.errorModal) return;
+        el.errorModal.hidden = true;
       }
 
       function renderPosterMarkup(posterUrl, title) {
@@ -2065,9 +2214,10 @@
 
         el.trackingList.innerHTML = state.trackingItems
           .map((item) => {
-            const title = item.anime_title || 'Без названия';
-            const watched = Number(item.episodes_watched) || 0;
-            const total = Number(item.episodes_total) || 0;
+            const title = item.title || 'Без названия';
+            const posterUrl = resolvePosterUrl(item.poster);
+            const watched = Number(item.watched_episodes) || 0;
+            const total = Number(item.episodes) || 0;
             const totalLabel = total > 0 ? total : '?';
             const percent = calculateProgressPercent(watched, total);
             const nextEp = formatNextEpisode(item.next_episode_at, item.status);
@@ -2079,14 +2229,14 @@
               <article class="anime-card" data-tracking-id="${escapeHtml(item.anime_id)}">
                 <div class="anime-card-row">
                   <div class="poster-frame">
-                    ${renderPosterMarkup(item.poster_url, title)}
+                    ${renderPosterMarkup(posterUrl, title)}
                   </div>
                   <div class="card-body">
                     <h3 class="card-title">${escapeHtml(title)}</h3>
                     <div class="meta-line">
                       <span>${escapeHtml(formatAnimeStatus(item.status))}</span>
                       <span aria-hidden="true">·</span>
-                      <span>${escapeHtml(item.notify_target || 'личка')}</span>
+                      <span>${escapeHtml(formatNotifyTarget(item.notify_target))}</span>
                       ${
                         hasDateTracking
                           ? `<span aria-hidden="true">·</span><span class="date-track-badge" data-date-badge="true" title="Отслеживается дата выхода 1 серии"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg><span>Дата старта</span></span>`
@@ -2177,6 +2327,21 @@
           .join('');
       }
 
+      function formatFinishedDate(isoString) {
+        if (!isoString) return '';
+        const d = new Date(isoString);
+        if (Number.isNaN(d.getTime())) return '';
+        try {
+          return new Intl.DateTimeFormat('ru-RU', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+          }).format(d);
+        } catch {
+          return d.toLocaleDateString('ru-RU');
+        }
+      }
+
       function renderHistory() {
         el.historyCount.textContent = pluralTitles(state.historyItems.length);
 
@@ -2211,13 +2376,13 @@
 
         el.historyList.innerHTML = state.historyItems
           .map((item) => {
-            const title = item.anime_title || 'Без названия';
-            const watched = Number(item.episodes_watched) || 0;
-            const total = Number(item.episodes_total) || 0;
-            const score = normalizeScore(item.score);
+            const title = item.title || 'Без названия';
+            const posterUrl = resolvePosterUrl(item.poster);
+            const rating = normalizeScore(item.rating);
+            const finishedLabel = formatFinishedDate(item.finished_at);
             const scoreButtons = Array.from({ length: 10 }, (_, idx) => {
               const val = idx + 1;
-              const active = score === val ? 'active' : '';
+              const active = rating === val ? 'active' : '';
               return `
                 <button
                   type="button"
@@ -2226,7 +2391,7 @@
                   data-anime-id="${escapeHtml(item.anime_id)}"
                   data-score="${val}"
                   aria-label="Оценка ${val} для ${escapeHtml(title)}"
-                  aria-pressed="${score === val ? 'true' : 'false'}"
+                  aria-pressed="${rating === val ? 'true' : 'false'}"
                 >${val}</button>
               `;
             }).join('');
@@ -2235,14 +2400,13 @@
               <article class="anime-card" data-history-id="${escapeHtml(item.anime_id)}">
                 <div class="anime-card-row">
                   <div class="poster-frame">
-                    ${renderPosterMarkup(item.poster_url, title)}
+                    ${renderPosterMarkup(posterUrl, title)}
                   </div>
                   <div class="card-body">
                     <h3 class="card-title">${escapeHtml(title)}</h3>
                     <div class="meta-line tabular-nums">
-                      <span>Серии: ${watched} / ${total > 0 ? total : '?'}</span>
-                      <span aria-hidden="true">·</span>
-                      <span class="meta-accent">${score ? `Оценка: ${score}/10` : 'Без оценки'}</span>
+                      <span class="meta-accent">${rating ? `Оценка: ${rating}/10` : 'Без оценки'}</span>
+                      ${finishedLabel ? `<span aria-hidden="true">·</span><span>${escapeHtml(finishedLabel)}</span>` : ''}
                     </div>
                   </div>
                 </div>
@@ -2318,7 +2482,7 @@
           state.trackingItems = await db.getTracking(currentUserId);
         } catch (err) {
           console.error('Load tracking error:', err);
-          showToast('Ошибка загрузки списка отслеживания');
+          showErrorPopup('Ошибка загрузки «Отслеживаю»', err);
         } finally {
           state.trackingLoading = false;
           renderTracking();
@@ -2337,7 +2501,7 @@
           state.historyItems = await db.getHistory(currentUserId);
         } catch (err) {
           console.error('Load history error:', err);
-          showToast('Ошибка загрузки истории');
+          showErrorPopup('Ошибка загрузки «Истории»', err);
         } finally {
           state.historyLoading = false;
           renderHistory();
@@ -2348,9 +2512,10 @@
       // МОДАЛЬНОЕ ОКНО НАСТРОЕК ОТСЛЕЖИВАНИЯ
       // =========================================================================
       function setNotifyTarget(target) {
-        state.modalNotifyTarget = target;
+        const normalized = normalizeNotifyTarget(target);
+        state.modalNotifyTarget = normalized;
         el.notifyButtons.forEach((btn) => {
-          const active = btn.dataset.target === target;
+          const active = btn.dataset.target === normalized;
           btn.classList.toggle('active', active);
           btn.setAttribute('aria-checked', active ? 'true' : 'false');
         });
@@ -2360,11 +2525,11 @@
         state.modalAnime = animeData;
         state.modalDetail = null;
 
-        const title = existingRecord?.anime_title || animeData.russian || animeData.name || 'Без названия';
-        const poster = existingRecord?.poster_url || resolvePosterUrl(animeData.image);
-        const totalEp = existingRecord?.episodes_total ?? animeData.episodes ?? 0;
+        const title = existingRecord?.title || animeData.russian || animeData.name || 'Без названия';
+        const poster = resolvePosterUrl(existingRecord?.poster || animeData.image);
+        const totalEp = existingRecord?.episodes ?? animeData.episodes ?? 0;
 
-        state.modalWatched = existingRecord ? Number(existingRecord.episodes_watched) || 0 : 0;
+        state.modalWatched = existingRecord ? Number(existingRecord.watched_episodes) || 0 : 0;
         el.modalEpWatched.textContent = String(state.modalWatched);
         el.modalEpTotal.textContent = totalEp > 0 ? String(totalEp) : '?';
 
@@ -2384,7 +2549,7 @@
             ? Boolean(existingRecord.track_date)
             : true
           : true;
-        setNotifyTarget(existingRecord?.notify_target || 'личка');
+        setNotifyTarget(existingRecord?.notify_target || 'dm');
 
         el.trackingModal.hidden = false;
 
@@ -2422,30 +2587,23 @@
           (item) => String(item.anime_id) === String(base.id || base.anime_id)
         );
 
-        const animeId = Number(base.id || base.anime_id);
-        const episodesTotal = Number(detail?.episodes || base.episodes || existing?.episodes_total || 0);
-        const episodesAired = Number(
-          detail?.episodes_aired ?? base.episodes_aired ?? existing?.episodes_aired ?? 0
-        );
-        const payload = {
-          user_id: currentUserId,
-          anime_id: animeId,
-          anime_title: existing?.anime_title || base.russian || base.name || 'Без названия',
-          anime_name_orig: base.name || existing?.anime_name_orig || '',
-          poster_url: existing?.poster_url || resolvePosterUrl(detail?.image || base.image),
-          episodes_watched: state.modalWatched,
-          episodes_total: episodesTotal,
-          episodes_aired: episodesAired,
-          next_episode_at: detail?.next_episode_at ?? existing?.next_episode_at ?? null,
-          licensed_by: extractLicenseText(detail) || existing?.licensed_by || '',
+        const payload = buildTrackingPayload({
+          userId: currentUserId,
+          animeId: base.id || base.anime_id,
+          title: existing?.title || base.russian || base.name || 'Без названия',
+          poster: existing?.poster || resolvePosterUrl(detail?.image || base.image),
           status: detail?.status || base.status || existing?.status || 'ongoing',
-          track_episodes: el.chkTrackEpisodes.checked,
-          track_status: el.chkTrackStatus.checked,
-          track_license: el.chkTrackLicense.checked,
-          track_date: Boolean(el.chkDate.checked),
-          notify_target: state.modalNotifyTarget,
-          updated_at: new Date().toISOString(),
-        };
+          episodes: detail?.episodes || base.episodes || existing?.episodes || 0,
+          episodesAired: detail?.episodes_aired ?? base.episodes_aired ?? existing?.episodes_aired ?? 0,
+          nextEpisodeAt: detail?.next_episode_at ?? existing?.next_episode_at ?? null,
+          licensedBy: extractLicenseText(detail) || existing?.licensed_by || '',
+          trackEpisodes: el.chkTrackEpisodes.checked,
+          trackStatus: el.chkTrackStatus.checked,
+          trackLicense: el.chkTrackLicense.checked,
+          trackDate: el.chkDate.checked,
+          notifyTarget: state.modalNotifyTarget,
+          watchedEpisodes: state.modalWatched,
+        });
 
         try {
           await db.upsertTracking(payload);
@@ -2454,7 +2612,7 @@
           showToast('Настройки отслеживания сохранены');
         } catch (err) {
           console.error('Save tracking error:', err);
-          showToast('Не удалось сохранить в таблицу tracking');
+          showErrorPopup('Ошибка сохранения в tracking', err);
         } finally {
           el.modalSaveBtn.disabled = false;
         }
@@ -2482,7 +2640,7 @@
       function openMoveHistoryModal(item) {
         state.moveTargetItem = item;
         state.moveScore = 8;
-        el.moveHistorySubtitle.textContent = item.anime_title || 'Без названия';
+        el.moveHistorySubtitle.textContent = item.title || 'Без названия';
         el.moveNoteInput.value = '';
         renderMoveScoreGrid();
         el.moveHistoryModal.hidden = false;
@@ -2498,25 +2656,25 @@
         if (!currentUserId || !state.moveTargetItem) return;
         const item = state.moveTargetItem;
 
+        const historyPayload = buildHistoryPayload({
+          userId: currentUserId,
+          animeId: item.anime_id,
+          title: item.title || 'Без названия',
+          poster: resolvePosterUrl(item.poster),
+          rating: state.moveScore,
+          note: el.moveNoteInput.value.trim(),
+          finishedAt: new Date().toISOString(),
+        });
+
         try {
-          await db.upsertHistory({
-            user_id: currentUserId,
-            anime_id: item.anime_id,
-            anime_title: item.anime_title,
-            poster_url: item.poster_url,
-            episodes_watched: item.episodes_watched || item.episodes_total || 0,
-            episodes_total: item.episodes_total || 0,
-            score: state.moveScore,
-            note: el.moveNoteInput.value.trim(),
-            completed_at: new Date().toISOString(),
-          });
+          await db.upsertHistory(historyPayload);
           await db.deleteTracking(currentUserId, item.anime_id);
           closeMoveHistoryModal();
           await Promise.all([loadTracking(), loadHistory()]);
           showToast('Тайтл перенесён в историю');
         } catch (err) {
           console.error('Move to history error:', err);
-          showToast('Ошибка при переносе в историю');
+          showErrorPopup('Ошибка переноса в history', err);
         }
       }
 
@@ -2581,27 +2739,28 @@
           if (!item) return;
 
           if (action === 'ep-plus' || action === 'ep-minus') {
-            const current = Number(item.episodes_watched) || 0;
-            const total = Number(item.episodes_total) || 0;
+            const current = Number(item.watched_episodes) || 0;
+            const total = Number(item.episodes) || 0;
             let next = action === 'ep-plus' ? current + 1 : Math.max(0, current - 1);
             if (total > 0) next = Math.min(total, next);
-            item.episodes_watched = next;
+            item.watched_episodes = next;
             renderTracking();
             try {
-              await db.updateTrackingByAnime(currentUserId, animeId, { episodes_watched: next });
+              await db.updateTrackingByAnime(currentUserId, animeId, { watched_episodes: next });
             } catch (err) {
               console.error('Update episodes error:', err);
-              showToast('Не удалось обновить прогресс');
+              showErrorPopup('Ошибка обновления серий', err);
             }
           } else if (action === 'settings') {
             openTrackingModal(
               {
                 id: item.anime_id,
-                russian: item.anime_title,
-                name: item.anime_name_orig || item.anime_title,
-                episodes: item.episodes_total,
+                russian: item.title,
+                name: item.title,
+                episodes: item.episodes,
+                episodes_aired: item.episodes_aired,
                 status: item.status,
-                image: item.poster_url,
+                image: item.poster,
               },
               item
             );
@@ -2621,7 +2780,7 @@
               showToast('Тайтл удалён из отслеживания');
             } catch (err) {
               console.error('Delete tracking error:', err);
-              showToast('Ошибка при удалении');
+              showErrorPopup('Ошибка удаления из tracking', err);
             }
           }
         });
@@ -2636,17 +2795,17 @@
           if (!item) return;
 
           if (action === 'set-score') {
-            const score = Number(btn.dataset.score);
-            item.score = score;
+            const rating = Number(btn.dataset.score);
+            item.rating = rating;
             const noteEl = el.historyList.querySelector(`textarea[data-note-for="${CSS.escape(String(animeId))}"]`);
             if (noteEl) item.note = noteEl.value;
             renderHistory();
             try {
-              await db.updateHistory(currentUserId, animeId, { score });
-              showToast(`Оценка ${score}/10 сохранена`);
+              await db.updateHistory(currentUserId, animeId, { rating });
+              showToast(`Оценка ${rating}/10 сохранена`);
             } catch (err) {
               console.error('Score update error:', err);
-              showToast('Не удалось сохранить оценку');
+              showErrorPopup('Ошибка сохранения оценки', err);
             }
           } else if (action === 'save-history') {
             const noteEl = el.historyList.querySelector(`textarea[data-note-for="${CSS.escape(String(animeId))}"]`);
@@ -2654,13 +2813,13 @@
             item.note = note;
             try {
               await db.updateHistory(currentUserId, animeId, {
-                score: item.score ?? null,
+                rating: normalizeScore(item.rating) ?? 8,
                 note,
               });
               showToast('Заметка и оценка сохранены');
             } catch (err) {
               console.error('Save history error:', err);
-              showToast('Не удалось сохранить в таблицу history');
+              showErrorPopup('Ошибка сохранения в history', err);
             }
           } else if (action === 'delete-history') {
             try {
@@ -2669,7 +2828,7 @@
               showToast('Запись удалена из истории');
             } catch (err) {
               console.error('Delete history error:', err);
-              showToast('Ошибка при удалении записи');
+              showErrorPopup('Ошибка удаления из history', err);
             }
           }
         });
@@ -2712,9 +2871,17 @@
         });
         el.moveHistoryForm.addEventListener('submit', handleConfirmMoveToHistory);
 
+        // Модалка технической ошибки Supabase
+        el.errorModalCloseBtn.addEventListener('click', closeErrorPopup);
+        el.errorModalOkBtn.addEventListener('click', closeErrorPopup);
+        el.errorModal.addEventListener('click', (e) => {
+          if (e.target === el.errorModal) closeErrorPopup();
+        });
+
         // Escape закрывает модальные окна
         document.addEventListener('keydown', (e) => {
           if (e.key === 'Escape') {
+            if (!el.errorModal.hidden) closeErrorPopup();
             if (!el.trackingModal.hidden) closeTrackingModal();
             if (!el.moveHistoryModal.hidden) closeMoveHistoryModal();
           }
