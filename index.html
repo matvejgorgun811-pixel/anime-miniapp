@@ -819,7 +819,7 @@
         margin: 0 auto;
         height: var(--tabbar-h);
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(4, 1fr);
       }
 
       .tab-btn {
@@ -843,6 +843,202 @@
       .tab-btn svg {
         width: 22px;
         height: 22px;
+      }
+
+      /* Release Calendar */
+      .calendar-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-card);
+        box-shadow: var(--shadow-card);
+        padding: 14px;
+        margin-bottom: 16px;
+      }
+
+      .calendar-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .calendar-month-center {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .calendar-month-label {
+        font-family: var(--font-display);
+        font-size: 16px;
+        font-weight: 700;
+        text-transform: capitalize;
+        margin: 0;
+        white-space: nowrap;
+      }
+
+      .cal-nav-btn {
+        min-width: 44px;
+        min-height: 44px;
+        border-radius: 12px;
+        background: var(--surface-muted);
+        color: var(--text);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: opacity 150ms ease, transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .cal-nav-btn:hover {
+        opacity: 0.86;
+      }
+
+      .cal-nav-btn:active {
+        transform: scale(0.95);
+      }
+
+      .cal-today-btn {
+        min-height: 32px;
+        padding: 4px 10px;
+        border-radius: 8px;
+        background: var(--surface-muted);
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .calendar-weekdays {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 4px;
+        margin-bottom: 6px;
+      }
+
+      .calendar-weekday {
+        text-align: center;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        padding: 2px 0;
+      }
+
+      .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 4px;
+      }
+
+      .cal-day-spacer {
+        min-height: 46px;
+      }
+
+      .cal-day-btn {
+        min-height: 46px;
+        width: 100%;
+        padding: 4px 2px;
+        border-radius: 12px;
+        border: 1px solid transparent;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        font-family: var(--font-mono);
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text);
+        transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+      }
+
+      .cal-day-btn:hover {
+        background: var(--surface-muted);
+      }
+
+      .cal-day-btn.is-today {
+        border-color: var(--accent);
+        color: var(--accent);
+        font-weight: 700;
+      }
+
+      .cal-day-btn.has-release {
+        background: color-mix(in srgb, var(--accent) 11%, transparent);
+        font-weight: 700;
+      }
+
+      .cal-day-btn.is-selected {
+        background: var(--accent);
+        color: var(--accent-text);
+        border-color: var(--accent);
+        font-weight: 700;
+      }
+
+      .cal-day-num {
+        line-height: 1;
+      }
+
+      .cal-day-marker {
+        height: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .cal-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: var(--accent);
+      }
+
+      .cal-count-badge {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1;
+        padding: 2px 5px;
+        border-radius: 999px;
+        background: #f59e0b;
+        color: #111827;
+      }
+
+      .cal-day-btn.is-selected .cal-dot {
+        background: #ffffff;
+      }
+
+      .cal-day-btn.is-selected .cal-count-badge {
+        background: #ffffff;
+        color: var(--accent);
+      }
+
+      .calendar-day-header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 6px 12px;
+        margin-bottom: 12px;
+      }
+
+      .calendar-day-title {
+        font-family: var(--font-display);
+        font-size: 17px;
+        font-weight: 700;
+        margin: 0;
+      }
+
+      .calendar-release-btn {
+        min-width: 0;
+        width: 100%;
+        text-align: left;
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+        padding: 0;
+        border-radius: 10px;
       }
 
       /* Modal / Bottom Sheet */
@@ -1249,7 +1445,62 @@
         <div id="trackingList" class="cards-grid" aria-live="polite"></div>
       </section>
 
-      <!-- TAB 3: HISTORY -->
+      <!-- TAB 3: CALENDAR -->
+      <section id="tab-calendar" class="hidden" aria-labelledby="heading-calendar">
+        <div class="view-header">
+          <h2 id="heading-calendar" class="view-title">Календарь</h2>
+          <span id="calSummaryMeta" class="view-meta tabular-nums">Релизы отслеживаемых тайтлов</span>
+        </div>
+
+        <div class="calendar-card">
+          <div class="calendar-toolbar">
+            <button
+              id="calPrevMonthBtn"
+              type="button"
+              class="cal-nav-btn"
+              aria-label="Предыдущий месяц"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </button>
+            <div class="calendar-month-center">
+              <h3 id="calMonthLabel" class="calendar-month-label"></h3>
+              <button id="calTodayBtn" type="button" class="cal-today-btn">Сегодня</button>
+            </div>
+            <button
+              id="calNextMonthBtn"
+              type="button"
+              class="cal-nav-btn"
+              aria-label="Следующий месяц"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="calendar-weekdays" aria-hidden="true">
+            <div class="calendar-weekday">Пн</div>
+            <div class="calendar-weekday">Вт</div>
+            <div class="calendar-weekday">Ср</div>
+            <div class="calendar-weekday">Чт</div>
+            <div class="calendar-weekday">Пт</div>
+            <div class="calendar-weekday">Сб</div>
+            <div class="calendar-weekday">Вс</div>
+          </div>
+
+          <div id="calGrid" class="calendar-grid" role="grid" aria-label="Календарь выхода серий"></div>
+        </div>
+
+        <div class="calendar-day-header">
+          <h3 id="calSelectedDateTitle" class="calendar-day-title"></h3>
+          <span id="calSelectedDateCount" class="view-meta tabular-nums"></span>
+        </div>
+        <div id="calDayReleases" class="cards-grid" aria-live="polite"></div>
+      </section>
+
+      <!-- TAB 4: HISTORY -->
       <section id="tab-history" class="hidden" aria-labelledby="heading-history">
         <div class="view-header">
           <h2 id="heading-history" class="view-title">История</h2>
@@ -1292,6 +1543,24 @@
             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
           </svg>
           <span>Отслеживаю</span>
+        </button>
+
+        <button
+          id="nav-calendar"
+          type="button"
+          class="tab-btn"
+          role="tab"
+          aria-selected="false"
+          aria-controls="tab-calendar"
+          data-tab="calendar"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect width="18" height="18" x="3" y="4" rx="2" />
+            <path d="M16 2v4" />
+            <path d="M8 2v4" />
+            <path d="M3 10h18" />
+          </svg>
+          <span>Календарь</span>
         </button>
 
         <button
@@ -1509,8 +1778,8 @@
       //     track_status, track_license, track_date, notify_target, watched_episodes
       //   history: user_id, anime_id, title, poster, rating, note, finished_at
       // =========================================================================
-      const SUPABASE_URL = 'https://ztdddyjdzrjybwwjmksv.supabase.co';
-      const SUPABASE_KEY = 'sb_publishable_mM0RHaRg5JzcLCdBRFWTeg_rerDn153';
+      const SUPABASE_URL = 'https://supabase.co';
+      const SUPABASE_KEY = 'ВСТАВЬ_СЮДА_СВОЙ_КЛЮЧ_sb_publishable_...';
 
       const SHIKIMORI_API_BASE = 'https://shikimori.io';
       const SHIKIMORI_MIRROR_BASE = 'https://shikimori.io';
@@ -1831,6 +2100,158 @@
           .replace(/'/g, '&#39;');
       }
 
+      function formatLocalDateKey(year, monthIndex, day) {
+        const m = String(monthIndex + 1).padStart(2, '0');
+        const d = String(day).padStart(2, '0');
+        return `${year}-${m}-${d}`;
+      }
+
+      function parseExactReleaseDate(rawValue) {
+        const raw = String(rawValue || '').trim();
+        if (!raw) return null;
+        // Отсекаем примерные даты без точного дня ("2026", "2026-10", "Дата выхода уточняется")
+        const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+        if (!match) return null;
+
+        const yearNum = Number(match[1]);
+        const monthNum = Number(match[2]);
+        const dayNum = Number(match[3]);
+        if (monthNum < 1 || monthNum > 12 || dayNum < 1 || dayNum > 31) return null;
+
+        const hasTime = raw.includes('T');
+        if (hasTime) {
+          const dt = new Date(raw);
+          if (Number.isNaN(dt.getTime())) return null;
+          const hours = String(dt.getHours()).padStart(2, '0');
+          const minutes = String(dt.getMinutes()).padStart(2, '0');
+          return {
+            year: dt.getFullYear(),
+            monthIndex: dt.getMonth(),
+            day: dt.getDate(),
+            dateKey: formatLocalDateKey(dt.getFullYear(), dt.getMonth(), dt.getDate()),
+            hasTime: true,
+            timeLabel: `${hours}:${minutes}`,
+          };
+        }
+
+        const checkDate = new Date(yearNum, monthNum - 1, dayNum);
+        if (
+          checkDate.getFullYear() !== yearNum ||
+          checkDate.getMonth() !== monthNum - 1 ||
+          checkDate.getDate() !== dayNum
+        ) {
+          return null;
+        }
+        return {
+          year: yearNum,
+          monthIndex: monthNum - 1,
+          day: dayNum,
+          dateKey: formatLocalDateKey(yearNum, monthNum - 1, dayNum),
+          hasTime: false,
+          timeLabel: 'Дата старта',
+        };
+      }
+
+      function buildCalendarEventsForMonth(trackingItems, viewYear, viewMonthIndex) {
+        const eventsByDate = {};
+        let totalEventsCount = 0;
+        let firstReleaseDateKey = null;
+
+        const monthStart = new Date(viewYear, viewMonthIndex, 1);
+        const monthEnd = new Date(viewYear, viewMonthIndex + 1, 0);
+
+        (Array.isArray(trackingItems) ? trackingItems : []).forEach((item) => {
+          const rawDate = item.next_episode_at || item.aired_on || '';
+          const parsed = parseExactReleaseDate(rawDate);
+          if (!parsed) return;
+
+          const totalEpisodes = Math.max(0, Number(item.episodes) || 0);
+          const airedEpisodes = Math.max(0, Number(item.episodes_aired) || 0);
+          const isWeeklyOngoing = item.status === 'ongoing' && parsed.hasTime;
+
+          let maxOccurrences = 1;
+          if (isWeeklyOngoing) {
+            maxOccurrences = totalEpisodes > 0 ? Math.max(1, totalEpisodes - airedEpisodes) : 26;
+          }
+
+          for (let step = 0; step < maxOccurrences; step += 1) {
+            const occDate = new Date(parsed.year, parsed.monthIndex, parsed.day + step * 7);
+            if (occDate > monthEnd) break;
+            if (occDate < monthStart) continue;
+
+            const dateKey = formatLocalDateKey(
+              occDate.getFullYear(),
+              occDate.getMonth(),
+              occDate.getDate()
+            );
+            if (!eventsByDate[dateKey]) {
+              eventsByDate[dateKey] = [];
+            }
+
+            const episodeNumber = isWeeklyOngoing
+              ? airedEpisodes + 1 + step
+              : item.status === 'anons'
+                ? 1
+                : null;
+
+            eventsByDate[dateKey].push({
+              dateKey,
+              animeId: item.anime_id,
+              title: item.title || 'Без названия',
+              poster: getPosterUrl(item.poster),
+              timeLabel: parsed.hasTime ? parsed.timeLabel : 'Дата старта',
+              hasTime: parsed.hasTime,
+              episodeNumber,
+              totalEpisodes,
+              status: item.status || 'ongoing',
+              isProjected: step > 0,
+            });
+            totalEventsCount += 1;
+            if (!firstReleaseDateKey || dateKey < firstReleaseDateKey) {
+              firstReleaseDateKey = dateKey;
+            }
+          }
+        });
+
+        Object.keys(eventsByDate).forEach((dateKey) => {
+          eventsByDate[dateKey].sort((a, b) => {
+            if (a.hasTime !== b.hasTime) return a.hasTime ? -1 : 1;
+            if (a.timeLabel !== b.timeLabel) return a.timeLabel.localeCompare(b.timeLabel);
+            return a.title.localeCompare(b.title, 'ru');
+          });
+        });
+
+        return { eventsByDate, totalEventsCount, firstReleaseDateKey };
+      }
+
+      function formatCalendarMonthTitle(year, monthIndex) {
+        const dt = new Date(year, monthIndex, 1);
+        try {
+          return new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' })
+            .format(dt)
+            .replace(/\s*г\.$/, '');
+        } catch {
+          return `${monthIndex + 1}.${year}`;
+        }
+      }
+
+      function formatCalendarDayHeading(dateKey) {
+        const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateKey || ''));
+        if (!match) return 'Выберите день';
+        const dt = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+        try {
+          return new Intl.DateTimeFormat('ru-RU', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })
+            .format(dt)
+            .replace(/\s*г\.$/, '');
+        } catch {
+          return `${match[3]}.${match[2]}.${match[1]}`;
+        }
+      }
+
       // =========================================================================
       // ИНИЦИАЛИЗАЦИЯ TELEGRAM MINI APP И ТЕМЫ
       // =========================================================================
@@ -2094,6 +2515,13 @@
       // =========================================================================
       // СОСТОЯНИЕ ПРИЛОЖЕНИЯ И DOM-ССЫЛКИ
       // =========================================================================
+      const _todayNow = new Date();
+      const _todayDateKey = formatLocalDateKey(
+        _todayNow.getFullYear(),
+        _todayNow.getMonth(),
+        _todayNow.getDate()
+      );
+
       const state = {
         activeTab: 'search',
         searchQuery: '',
@@ -2104,6 +2532,9 @@
         trackingLoading: false,
         historyItems: [],
         historyLoading: false,
+        calendarYear: _todayNow.getFullYear(),
+        calendarMonth: _todayNow.getMonth(),
+        calendarSelectedDate: _todayDateKey,
         pendingDeleteId: null,
         modalAnime: null,
         modalDetail: null,
@@ -2122,6 +2553,7 @@
         tabSections: {
           search: document.getElementById('tab-search'),
           tracking: document.getElementById('tab-tracking'),
+          calendar: document.getElementById('tab-calendar'),
           history: document.getElementById('tab-history'),
         },
         navButtons: Array.from(document.querySelectorAll('.tab-btn[data-tab]')),
@@ -2133,6 +2565,15 @@
         searchResults: document.getElementById('searchResults'),
         trackingList: document.getElementById('trackingList'),
         trackingCount: document.getElementById('trackingCount'),
+        calSummaryMeta: document.getElementById('calSummaryMeta'),
+        calPrevMonthBtn: document.getElementById('calPrevMonthBtn'),
+        calNextMonthBtn: document.getElementById('calNextMonthBtn'),
+        calTodayBtn: document.getElementById('calTodayBtn'),
+        calMonthLabel: document.getElementById('calMonthLabel'),
+        calGrid: document.getElementById('calGrid'),
+        calSelectedDateTitle: document.getElementById('calSelectedDateTitle'),
+        calSelectedDateCount: document.getElementById('calSelectedDateCount'),
+        calDayReleases: document.getElementById('calDayReleases'),
         historyList: document.getElementById('historyList'),
         historyCount: document.getElementById('historyCount'),
         trackingModal: document.getElementById('trackingModal'),
@@ -2244,6 +2685,10 @@
           btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
         });
         if (tabName === 'tracking') loadTracking();
+        if (tabName === 'calendar') {
+          renderCalendar();
+          if (currentUserId) loadTracking();
+        }
         if (tabName === 'history') loadHistory();
       }
 
@@ -2631,9 +3076,170 @@
         }
       }
 
+      function pluralReleases(count) {
+        const mod10 = count % 10;
+        const mod100 = count % 100;
+        if (mod10 === 1 && mod100 !== 11) return `${count} релиз`;
+        if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return `${count} релиза`;
+        return `${count} релизов`;
+      }
+
+      function renderCalendar() {
+        const year = state.calendarYear;
+        const monthIndex = state.calendarMonth;
+        el.calMonthLabel.textContent = formatCalendarMonthTitle(year, monthIndex);
+
+        const now = new Date();
+        const todayKey = formatLocalDateKey(now.getFullYear(), now.getMonth(), now.getDate());
+        const isCurrentMonth = year === now.getFullYear() && monthIndex === now.getMonth();
+        el.calTodayBtn.classList.toggle('hidden', isCurrentMonth && state.calendarSelectedDate === todayKey);
+
+        const { eventsByDate, totalEventsCount, firstReleaseDateKey } = buildCalendarEventsForMonth(
+          state.trackingItems,
+          year,
+          monthIndex
+        );
+
+        el.calSummaryMeta.textContent =
+          totalEventsCount > 0 ? `${pluralReleases(totalEventsCount)} в месяце` : 'Нет точных дат в месяце';
+
+        const selectedMonthPrefix = `${year}-${String(monthIndex + 1).padStart(2, '0')}-`;
+        if (!state.calendarSelectedDate || !state.calendarSelectedDate.startsWith(selectedMonthPrefix)) {
+          state.calendarSelectedDate = isCurrentMonth
+            ? todayKey
+            : firstReleaseDateKey || formatLocalDateKey(year, monthIndex, 1);
+        }
+
+        const firstDayOfMonth = new Date(year, monthIndex, 1);
+        const startOffset = (firstDayOfMonth.getDay() + 6) % 7; // Пн = 0 ... Вс = 6
+        const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+
+        const cellsHtml = [];
+        for (let i = 0; i < startOffset; i += 1) {
+          cellsHtml.push('<div class="cal-day-spacer" aria-hidden="true"></div>');
+        }
+
+        for (let day = 1; day <= daysInMonth; day += 1) {
+          const dateKey = formatLocalDateKey(year, monthIndex, day);
+          const dayEvents = eventsByDate[dateKey] || [];
+          const count = dayEvents.length;
+          const isToday = dateKey === todayKey;
+          const isSelected = dateKey === state.calendarSelectedDate;
+
+          const classes = ['cal-day-btn'];
+          if (isToday) classes.push('is-today');
+          if (count > 0) classes.push('has-release');
+          if (isSelected) classes.push('is-selected');
+
+          let markerHtml = '<span class="cal-day-marker" aria-hidden="true"></span>';
+          if (count === 1) {
+            markerHtml = '<span class="cal-day-marker" aria-hidden="true"><span class="cal-dot"></span></span>';
+          } else if (count > 1) {
+            markerHtml = `<span class="cal-day-marker" aria-hidden="true"><span class="cal-count-badge">${count}</span></span>`;
+          }
+
+          const ariaParts = [formatCalendarDayHeading(dateKey)];
+          if (count > 0) ariaParts.push(pluralReleases(count));
+
+          cellsHtml.push(`
+            <button
+              type="button"
+              class="${classes.join(' ')}"
+              data-date-key="${dateKey}"
+              aria-label="${escapeHtml(ariaParts.join(' — '))}"
+              aria-pressed="${isSelected ? 'true' : 'false'}"
+            >
+              <span class="cal-day-num">${day}</span>
+              ${markerHtml}
+            </button>
+          `);
+        }
+
+        el.calGrid.innerHTML = cellsHtml.join('');
+
+        // Панель релизов выбранного дня под календарем
+        const selectedEvents = eventsByDate[state.calendarSelectedDate] || [];
+        el.calSelectedDateTitle.textContent = formatCalendarDayHeading(state.calendarSelectedDate);
+        el.calSelectedDateCount.textContent =
+          selectedEvents.length > 0 ? pluralReleases(selectedEvents.length) : 'Нет релизов';
+
+        if (!currentUserId) {
+          el.calDayReleases.innerHTML = `
+            <div class="state-box" style="grid-column: 1 / -1;">
+              <p class="state-title">Нужен профиль Telegram</p>
+              <p class="state-desc">Откройте Mini App через кнопку Меню бота, чтобы видеть календарь ваших отслеживаемых тайтлов.</p>
+            </div>
+          `;
+          return;
+        }
+
+        if (!state.trackingItems.length) {
+          el.calDayReleases.innerHTML = `
+            <div class="state-box" style="grid-column: 1 / -1;">
+              <p class="state-title">Нет отслеживаемых тайтлов</p>
+              <p class="state-desc">Добавьте онгоинги или анонсы с точной датой во вкладке «Поиск», и они появятся в календаре.</p>
+            </div>
+          `;
+          return;
+        }
+
+        if (!selectedEvents.length) {
+          el.calDayReleases.innerHTML = `
+            <div class="state-box" style="grid-column: 1 / -1;">
+              <p class="state-title">На этот день релизов нет</p>
+              <p class="state-desc">${
+                firstReleaseDateKey
+                  ? 'Выберите день с яркой точкой в календаре, чтобы посмотреть время выхода серий.'
+                  : 'У отслеживаемых тайтлов в этом месяце пока нет точных дат выхода (примерные даты без дня не отображаются).'
+              }</p>
+            </div>
+          `;
+          return;
+        }
+
+        el.calDayReleases.innerHTML = selectedEvents
+          .map((ev) => {
+            const epText = ev.episodeNumber
+              ? ev.totalEpisodes > 0
+                ? `Серия ${ev.episodeNumber} из ${ev.totalEpisodes}`
+                : `Серия ${ev.episodeNumber}`
+              : formatAnimeStatus(ev.status);
+            const timePrefix = ev.hasTime ? `Выход в ${ev.timeLabel}` : ev.timeLabel;
+
+            return `
+              <article class="anime-card" data-calendar-anime="${escapeHtml(ev.animeId)}">
+                <button
+                  type="button"
+                  class="calendar-release-btn"
+                  data-calendar-anime-id="${escapeHtml(ev.animeId)}"
+                  aria-label="Открыть настройки: ${escapeHtml(ev.title)}"
+                >
+                  <div class="poster-frame">
+                    ${renderPosterMarkup(ev.poster, ev.title)}
+                  </div>
+                  <div class="card-body">
+                    <h3 class="card-title">${escapeHtml(ev.title)}</h3>
+                    <div class="meta-line tabular-nums">
+                      <span class="meta-accent">${escapeHtml(timePrefix)}</span>
+                      <span aria-hidden="true">·</span>
+                      <span>${escapeHtml(epText)}</span>
+                    </div>
+                    <div class="meta-line">
+                      <span>${escapeHtml(formatAnimeStatus(ev.status))}</span>
+                      ${ev.isProjected ? '<span aria-hidden="true">·</span><span>По расписанию</span>' : ''}
+                    </div>
+                  </div>
+                </button>
+              </article>
+            `;
+          })
+          .join('');
+      }
+
       async function loadTracking() {
         if (!currentUserId) {
           renderTracking();
+          if (state.activeTab === 'calendar') renderCalendar();
           return;
         }
         state.trackingLoading = true;
@@ -2647,6 +3253,7 @@
           state.trackingLoading = false;
           renderTracking();
           if (state.activeTab === 'search') renderSearch();
+          if (state.activeTab === 'calendar') renderCalendar();
         }
       }
 
@@ -2832,6 +3439,7 @@
           await db.upsertTracking(payload);
           await loadTracking();
           closeTrackingModal();
+          if (state.activeTab === 'calendar') renderCalendar();
           showToast('Настройки отслеживания сохранены');
         } catch (err) {
           console.error('Save tracking error:', err);
@@ -3006,6 +3614,67 @@
               showErrorPopup('Ошибка удаления из tracking', err);
             }
           }
+        });
+
+        // Календарь релизов
+        el.calPrevMonthBtn.addEventListener('click', () => {
+          if (state.calendarMonth === 0) {
+            state.calendarMonth = 11;
+            state.calendarYear -= 1;
+          } else {
+            state.calendarMonth -= 1;
+          }
+          renderCalendar();
+        });
+
+        el.calNextMonthBtn.addEventListener('click', () => {
+          if (state.calendarMonth === 11) {
+            state.calendarMonth = 0;
+            state.calendarYear += 1;
+          } else {
+            state.calendarMonth += 1;
+          }
+          renderCalendar();
+        });
+
+        el.calTodayBtn.addEventListener('click', () => {
+          const now = new Date();
+          state.calendarYear = now.getFullYear();
+          state.calendarMonth = now.getMonth();
+          state.calendarSelectedDate = formatLocalDateKey(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate()
+          );
+          renderCalendar();
+        });
+
+        el.calGrid.addEventListener('click', (e) => {
+          const btn = e.target.closest('button[data-date-key]');
+          if (!btn) return;
+          state.calendarSelectedDate = btn.dataset.dateKey;
+          renderCalendar();
+        });
+
+        el.calDayReleases.addEventListener('click', (e) => {
+          const btn = e.target.closest('button[data-calendar-anime-id]');
+          if (!btn) return;
+          const animeId = btn.dataset.calendarAnimeId;
+          const item = state.trackingItems.find((t) => String(t.anime_id) === String(animeId));
+          if (!item) return;
+          openTrackingModal(
+            {
+              id: item.anime_id,
+              russian: item.title,
+              name: item.title,
+              episodes: item.episodes,
+              episodes_aired: item.episodes_aired,
+              next_episode_at: item.next_episode_at,
+              status: item.status,
+              image: item.poster,
+            },
+            item
+          );
         });
 
         // Действия во вкладке «История»
