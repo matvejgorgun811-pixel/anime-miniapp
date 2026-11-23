@@ -82,7 +82,7 @@
           <p id="tracking-count-label" class="text-xs text-slate-400">Общий список команды озвучки (0)</p>
         </div>
 
-        <!-- Filter Chips (Horizontal scrollable) -->
+        <!-- Filter Chips -->
         <div class="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar" id="tracking-filters">
           <button onclick="setTrackingFilter('all')" data-filter="all" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-indigo-600 text-white shadow-md whitespace-nowrap">Все</button>
           <button onclick="setTrackingFilter('licensed')" data-filter="licensed" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-[#151a24] text-slate-400 hover:bg-slate-800 border border-white/[0.08] whitespace-nowrap">Лицензированы</button>
@@ -161,7 +161,7 @@
 
   <!-- Modal 1: Tracking Setup & Settings -->
   <div id="modal-tracking" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="bg-[#151a24] border border-white/[0.08] rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+    <div class="bg-[#151a24] border border-white/[0.08] rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between">
         <h3 class="text-lg font-bold text-white">Настройка отслеживания</h3>
         <button onclick="closeModal('modal-tracking')" class="text-slate-400 hover:text-white">
@@ -197,33 +197,49 @@
         <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Куда отправлять уведомления</label>
         <div class="space-y-2">
           <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer">
-            <input type="radio" name="notify_target" value="dm" checked class="text-indigo-600" />
+            <input type="radio" name="notify_target" value="dm" checked onchange="toggleGroupFields()" class="text-indigo-600" />
             <span>В личные сообщения (ЛС)</span>
           </label>
           <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer">
-            <input type="radio" name="notify_target" value="group" class="text-indigo-600" />
+            <input type="radio" name="notify_target" value="group" onchange="toggleGroupFields()" class="text-indigo-600" />
             <span>В группу</span>
           </label>
           <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer">
-            <input type="radio" name="notify_target" value="both" class="text-indigo-600" />
+            <input type="radio" name="notify_target" value="both" onchange="toggleGroupFields()" class="text-indigo-600" />
             <span>В ЛС и в группу</span>
           </label>
         </div>
       </div>
 
-      <div class="space-y-1.5">
-        <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider">ID группы для уведомлений</label>
-        <input type="text" id="cfgGroupId" placeholder="Например: -1001234567890 (пусто = группа по умолчанию)" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+      <!-- Group Selection Section (Dynamic) -->
+      <div id="group-selection-container" class="space-y-3 pt-1 hidden">
+        <div>
+          <label class="text-xs font-semibold text-slate-300 mb-1 block">Выберите или добавьте группу</label>
+          <select id="cfgGroupSelect" onchange="handleGroupSelectChange()" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            <!-- Populated via JS -->
+          </select>
+        </div>
+
+        <div id="manual-group-fields" class="space-y-2.5 pt-1 hidden">
+          <div>
+            <label class="text-xs text-slate-400 mb-1 block">Название группы (для себя)</label>
+            <input type="text" id="cfgGroupTitle" placeholder="Например: Основной чат озвучки" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 mb-1 block">ID группы (например -1001234567890)</label>
+            <input type="text" id="cfgGroupId" placeholder="-1001234567890" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+          </div>
+        </div>
       </div>
 
       <div class="flex space-x-3 pt-2">
-        <button onclick="closeModal('modal-tracking')" class="flex-1 bg-[#0b0e14] hover:bg-slate-800 text-slate-300 py-3 rounded-xl font-medium text-xs transition border border-white/[0.08]">Отмена</button>
+        <button onclick="closeModal('modal-tracking')" class="flex-1 bg-[#0b0e14] hover:bg-slate-850 text-slate-300 py-3 rounded-xl font-medium text-xs transition border border-white/[0.08]">Отмена</button>
         <button onclick="saveTrackingFromModal()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-medium text-xs transition shadow-lg shadow-indigo-600/30">Сохранить в отслеживаемое</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal 2: Dub Schedule Setup -->
+  <!-- Modal 2: Dub Schedule Setup (Ongoing / First Ep support) -->
   <div id="modal-dub" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 hidden">
     <div class="bg-[#151a24] border border-white/[0.08] rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between">
@@ -235,8 +251,13 @@
 
       <div class="space-y-3">
         <div>
-          <label class="text-xs font-semibold text-slate-300 mb-1 block">Дата выхода 1 серии</label>
-          <input type="date" id="dub-date" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500" />
+          <label class="text-xs font-semibold text-slate-300 mb-1 block">Стартовая серия для озвучки (start_ep)</label>
+          <input type="number" id="dub-start-ep" min="1" value="1" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500" />
+          <p class="text-[10px] text-slate-400 mt-0.5">Для онгоингов можно указать текущую вышедшую серию (например, 5).</p>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-300 mb-1 block">Дата и время ближайшей серии</label>
+          <input type="datetime-local" id="dub-datetime" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500" />
         </div>
         <div>
           <label class="text-xs font-semibold text-slate-300 mb-1 block">Всего серий</label>
@@ -261,7 +282,7 @@
       </div>
 
       <div class="flex space-x-3 pt-2">
-        <button onclick="closeModal('modal-dub')" class="flex-1 bg-[#0b0e14] hover:bg-slate-800 text-slate-300 py-3 rounded-xl font-medium text-xs transition border border-white/[0.08]">Отмена</button>
+        <button onclick="closeModal('modal-dub')" class="flex-1 bg-[#0b0e14] hover:bg-slate-850 text-slate-300 py-3 rounded-xl font-medium text-xs transition border border-white/[0.08]">Отмена</button>
         <button onclick="saveDubScheduleFromModal()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-medium text-xs transition shadow-lg shadow-indigo-600/30">Сохранить релиз</button>
       </div>
     </div>
@@ -288,7 +309,7 @@
       </div>
 
       <div class="flex space-x-3 pt-2">
-        <button onclick="closeModal('modal-history')" class="flex-1 bg-[#0b0e14] hover:bg-slate-800 text-slate-300 py-3 rounded-xl font-medium text-xs transition border border-white/[0.08]">Отмена</button>
+        <button onclick="closeModal('modal-history')" class="flex-1 bg-[#0b0e14] hover:bg-slate-850 text-slate-300 py-3 rounded-xl font-medium text-xs transition border border-white/[0.08]">Отмена</button>
         <button onclick="saveHistoryFromModal()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-medium text-xs transition shadow-lg shadow-indigo-600/30">Сохранить</button>
       </div>
     </div>
@@ -317,7 +338,7 @@
         <!-- Rendered via JS -->
       </div>
 
-      <button onclick="closeModal('modal-admins')" class="w-full bg-[#0b0e14] hover:bg-slate-800 text-slate-300 py-3 rounded-xl font-medium text-xs transition border border-white/[0.08]">Закрыть</button>
+      <button onclick="closeModal('modal-admins')" class="w-full bg-[#0b0e14] hover:bg-slate-850 text-slate-300 py-3 rounded-xl font-medium text-xs transition border border-white/[0.08]">Закрыть</button>
     </div>
   </div>
 
@@ -370,13 +391,25 @@
     const monthsNom = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
     const monthsGen = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
 
+    // 1. STRICT LOCAL DATE HELPER (Fixes 1-day calendar date shift)
+    function toLocalDateKey(dateInput) {
+      if (!dateInput) return '';
+      const str = String(dateInput);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+        return str; // Take first 10 chars directly without Date object conversion
+      }
+      const d = new Date(dateInput);
+      if (isNaN(d.getTime())) return str.slice(0, 10);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
     // SMART DATE FORMATTER (Strict prohibition of toLocaleDateString)
     function getAnimeReleaseInfo(rawDate, status) {
       if (!rawDate) {
         return { text: 'Дата выхода неизвестна', isExact: false };
       }
       const dateStr = String(rawDate);
-      const datePart = dateStr.slice(0, 10); // 'YYYY-MM-DD'
+      const datePart = dateStr.slice(0, 10);
       const parts = datePart.split('-');
       if (parts.length < 3) {
         return { text: 'Дата выхода неизвестна', isExact: false };
@@ -396,7 +429,7 @@
       if (dateStr.includes('T')) {
         const timePart = dateStr.split('T')[1];
         if (timePart) {
-          timeStr = ', ' + timePart.slice(0, 5);
+          timeStr = `, ${timePart.slice(0, 5)}`;
         }
       }
 
@@ -428,9 +461,17 @@
       throw new Error('All Shikimori API mirrors failed');
     }
 
-    // POSTER URL HELPER WITH FALLBACK
+    // POSTER URL HELPER WITH FALLBACK (Clean gradient placeholder without "X")
     function getPosterUrl(anime) {
-      const path = anime?.image?.original || anime?.image?.preview || anime?.image?.x96 || anime?.poster || '';
+      const img = anime?.image;
+      let path = '';
+      if (typeof img === 'object' && img !== null) {
+        path = img.original || img.preview || img.x96 || '';
+      } else if (typeof anime?.poster === 'string') {
+        path = anime.poster;
+      } else if (typeof anime === 'string') {
+        path = anime;
+      }
       if (!path) return '';
       if (path.startsWith('http')) return path;
       if (path.startsWith('/')) return `https://shikimori.io${path}`;
@@ -443,10 +484,10 @@
       const initials = cleanTitle.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase() || 'AN';
 
       if (!url) {
-        return `<div class="${customClass} rounded-xl bg-gradient-to-tr from-indigo-900 to-slate-800 flex items-center justify-center text-indigo-200 font-bold text-sm shadow-md shrink-0 border border-white/[0.08]">${initials}</div>`;
+        return `<div class="${customClass} rounded-xl bg-gradient-to-tr from-indigo-950 via-slate-900 to-indigo-900 flex items-center justify-center text-indigo-300 font-bold text-sm shadow-md shrink-0 border border-white/[0.08]">${initials}</div>`;
       }
 
-      return `<img src="${url}" alt="${cleanTitle}" class="${customClass} object-cover rounded-xl shadow-md shrink-0 bg-slate-900 border border-white/[0.08]" onerror="this.onerror=null; this.replaceWith(Object.assign(document.createElement('div'), {className: '${customClass} rounded-xl bg-gradient-to-tr from-indigo-900 to-slate-800 flex items-center justify-center text-indigo-200 font-bold text-sm shadow-md shrink-0 border border-white/[0.08]', innerText: '${initials}'}));" />`;
+      return `<img src="${url}" alt="${cleanTitle}" class="${customClass} object-cover rounded-xl shadow-md shrink-0 bg-slate-900 border border-white/[0.08]" onerror="this.onerror=null; this.replaceWith(Object.assign(document.createElement('div'), {className: '${customClass} rounded-xl bg-gradient-to-tr from-indigo-950 via-slate-900 to-indigo-900 flex items-center justify-center text-indigo-300 font-bold text-sm shadow-md shrink-0 border border-white/[0.08]', innerText: '${initials}'}));" />`;
     }
 
     // APP STATE
@@ -455,6 +496,7 @@
       isAdmin: false,
       isOwner: false,
       teamAdmins: [],
+      savedGroups: [],
       activeTab: 'search',
       calendarMode: 'general',
       filterTracking: 'all',
@@ -462,9 +504,8 @@
       trackingList: [],
       dubScheduleList: [],
       historyList: [],
-      calendarOffset: 0, // month offset from current
-      selectedDateStr: new Date().toISOString().slice(0, 10),
-      // Active modals data
+      calendarOffset: 0,
+      selectedDateStr: toLocalDateKey(new Date()),
       trackingModalAnime: null,
       dubModalAnime: null,
       historyModalItem: null
@@ -488,14 +529,14 @@
       const currentUserId = Number(state.tgUser.id || 0);
       const currentUsername = String(state.tgUser.username || '').replace(/^@/, '').toLowerCase();
 
-      // Load team admins from Supabase
       try {
-        const { data: admins, error } = await supabaseClient.from('team_admins').select('*');
-        if (!error && admins) {
-          state.teamAdmins = admins;
-        }
+        const { data: admins } = await supabaseClient.from('team_admins').select('*');
+        if (admins) state.teamAdmins = admins;
+
+        const { data: groups } = await supabaseClient.from('saved_groups').select('*');
+        if (groups) state.savedGroups = groups;
       } catch (e) {
-        console.warn("Failed to load team_admins:", e);
+        console.warn("Failed to load metadata tables:", e);
       }
 
       state.isOwner = (currentUserId === OWNER_ID);
@@ -506,7 +547,6 @@
 
       updateRoleHeaderUI();
 
-      // Load tracking, dub_schedule, history
       try {
         const { data: t } = await supabaseClient.from('tracking').select('*').order('id', { ascending: false });
         if (t) state.trackingList = t;
@@ -692,7 +732,7 @@
       }
     }
 
-    // MODAL 5: TRACKING SETUP & SETTINGS
+    // MODAL 5: TRACKING SETUP & SAVED GROUPS
     async function openTrackingModalForAnimeId(animeId) {
       const modal = document.getElementById('modal-tracking');
       const preview = document.getElementById('modal-tracking-preview');
@@ -708,7 +748,6 @@
         const licenseText = Array.isArray(anime.licensed_by) && anime.licensed_by.length > 0 ? anime.licensed_by.join(', ') : (anime.licensed_by || '');
         const title = anime.russian || anime.name;
 
-        // Check if already tracked to prefill settings
         const existing = state.trackingList.find(t => Number(t.anime_id) === Number(animeId));
 
         preview.innerHTML = `
@@ -738,8 +777,52 @@
           document.getElementById('t-status').checked = true;
           document.getElementById('cfgGroupId').value = '';
         }
+
+        populateSavedGroupsSelect(existing ? existing.target_group_id : '');
+        toggleGroupFields();
       } catch (err) {
         preview.innerHTML = `<div class="text-xs text-rose-400">Ошибка загрузки</div>`;
+      }
+    }
+
+    function populateSavedGroupsSelect(selectedChatId) {
+      const select = document.getElementById('cfgGroupSelect');
+      let html = `<option value="">-- Выберите сохраненную группу --</option>`;
+      
+      state.savedGroups.forEach(g => {
+        const isSel = String(g.chat_id) === String(selectedChatId);
+        html += `<option value="${g.chat_id}" ${isSel ? 'selected' : ''}>${g.title} (${g.chat_id})</option>`;
+      });
+
+      html += `<option value="manual">+ Ввести новый ID группы вручную</option>`;
+      select.innerHTML = html;
+
+      // If selectedChatId is present but not in savedGroups, select manual
+      if (selectedChatId && !state.savedGroups.some(g => String(g.chat_id) === String(selectedChatId))) {
+        select.value = 'manual';
+        document.getElementById('cfgGroupId').value = selectedChatId;
+      }
+    }
+
+    function toggleGroupFields() {
+      const target = document.querySelector('input[name="notify_target"]:checked')?.value || 'dm';
+      const container = document.getElementById('group-selection-container');
+      if (target === 'group' || target === 'both') {
+        container.classList.remove('hidden');
+        handleGroupSelectChange();
+      } else {
+        container.classList.add('hidden');
+      }
+    }
+
+    function handleGroupSelectChange() {
+      const selectVal = document.getElementById('cfgGroupSelect').value;
+      const manualFields = document.getElementById('manual-group-fields');
+      if (selectVal === 'manual' || selectVal === '') {
+        manualFields.classList.remove('hidden');
+      } else {
+        manualFields.classList.add('hidden');
+        document.getElementById('cfgGroupId').value = selectVal;
       }
     }
 
@@ -752,7 +835,28 @@
       const existing = state.trackingList.find(t => Number(t.anime_id) === Number(anime.id));
 
       const selectedTarget = document.querySelector('input[name="notify_target"]:checked')?.value || 'dm';
-      const groupInputVal = document.getElementById('cfgGroupId').value;
+      let targetGroupId = document.getElementById('cfgGroupId').value.trim();
+      const groupTitle = document.getElementById('cfgGroupTitle').value.trim();
+      const selectVal = document.getElementById('cfgGroupSelect').value;
+
+      // If manual entry was used and new group details provided, save to saved_groups table
+      if ((selectVal === 'manual' || selectVal === '') && targetGroupId) {
+        const titleToSave = groupTitle || `Группа ${targetGroupId}`;
+        // Check if already in savedGroups
+        if (!state.savedGroups.some(g => String(g.chat_id) === String(targetGroupId))) {
+          try {
+            const { data: newGroupData } = await supabaseClient.from('saved_groups').insert({
+              title: titleToSave,
+              chat_id: targetGroupId
+            }).select();
+            if (newGroupData && newGroupData[0]) {
+              state.savedGroups.push(newGroupData[0]);
+            }
+          } catch (e) {
+            console.warn("Error saving group to saved_groups:", e);
+          }
+        }
+      }
 
       const payload = {
         user_id: currentUserId,
@@ -769,7 +873,7 @@
         track_license: Boolean(document.getElementById('t-license').checked),
         track_status: Boolean(document.getElementById('t-status').checked),
         notify_target: selectedTarget,
-        target_group_id: groupInputVal.trim(),
+        target_group_id: targetGroupId,
         watched_episodes: existing ? existing.watched_episodes : 0
       };
 
@@ -777,7 +881,6 @@
         const { error } = await supabaseClient.from('tracking').upsert(payload, { onConflict: 'user_id,anime_id' });
         if (error) throw error;
 
-        // Reload tracking list
         const { data: t } = await supabaseClient.from('tracking').select('*').order('id', { ascending: false });
         if (t) state.trackingList = t;
 
@@ -944,7 +1047,7 @@
       }
     }
 
-    // TAB 3: CALENDAR & DUB SCHEDULE
+    // TAB 3: CALENDAR & ONGOING DUB SCHEDULE SUPPORT
     function setCalendarMode(mode) {
       state.calendarMode = mode;
       document.getElementById('cal-mode-general').className = `flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs font-medium ${mode === 'general' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}`;
@@ -959,21 +1062,27 @@
 
     function resetCalendarToday() {
       state.calendarOffset = 0;
-      state.selectedDateStr = new Date().toISOString().slice(0, 10);
+      state.selectedDateStr = toLocalDateKey(new Date());
       renderCalendarWidget();
     }
 
+    // Helper to calculate ongoing / aired episodes scheduling weekly from start_ep
     function getExpandedDubEpisodes() {
       const expanded = [];
       state.dubScheduleList.forEach(show => {
         const firstDate = new Date(show.first_ep_date);
         if (!isNaN(firstDate.getTime())) {
-          const total = show.total_episodes || 12;
-          for (let ep = 1; ep <= total; ep++) {
-            const epTime = firstDate.getTime() + (ep - 1) * 7 * 24 * 60 * 60 * 1000;
+          const totalEps = show.total_episodes || 12;
+          const startEp = show.start_ep || 1;
+
+          for (let ep = startEp; ep <= totalEps; ep++) {
+            // ep index offset from startEp
+            const weekOffset = ep - startEp;
+            const epTime = firstDate.getTime() + weekOffset * 7 * 24 * 60 * 60 * 1000;
             const epDateObj = new Date(epTime);
-            const dateStr = epDateObj.toISOString().slice(0, 10);
+            const dateStr = toLocalDateKey(epDateObj);
             const timeStr = epDateObj.toTimeString().slice(0, 5);
+
             expanded.push({
               ...show,
               episode_number: ep,
@@ -1005,30 +1114,29 @@
       let startDayOfWeek = firstDayOfMonth.getDay() - 1; // 0 = Mon
       if (startDayOfWeek === -1) startDayOfWeek = 6;
 
-      // Padding for previous month days
       for (let i = 0; i < startDayOfWeek; i++) {
         html += `<div></div>`;
       }
 
-      // Gather release dates
       const exactGeneral = state.trackingList.filter(item => getAnimeReleaseInfo(item.next_episode_at, item.status).isExact);
       const dubEpisodes = getExpandedDubEpisodes();
+      const todayKey = toLocalDateKey(new Date());
 
       for (let d = 1; d <= lastDayOfMonth.getDate(); d++) {
         const dayDate = new Date(firstDayOfMonth.getFullYear(), firstDayOfMonth.getMonth(), d);
-        const dayStr = dayDate.toISOString().slice(0, 10);
-        const isSelected = dayStr === state.selectedDateStr;
-        const isToday = dayStr === new Date().toISOString().slice(0, 10);
+        const dayKey = toLocalDateKey(dayDate);
+        const isSelected = dayKey === state.selectedDateStr;
+        const isToday = dayKey === todayKey;
 
         let hasRelease = false;
         if (state.calendarMode === 'general') {
-          hasRelease = exactGeneral.some(item => String(item.next_episode_at).slice(0, 10) === dayStr);
+          hasRelease = exactGeneral.some(item => toLocalDateKey(item.next_episode_at) === dayKey);
         } else {
-          hasRelease = dubEpisodes.some(ep => ep.date_str === dayStr);
+          hasRelease = dubEpisodes.some(ep => ep.date_str === dayKey);
         }
 
         html += `
-          <button onclick="selectCalendarDate('${dayStr}')" class="h-9 rounded-xl flex flex-col items-center justify-center relative transition text-xs font-medium ${
+          <button onclick="selectCalendarDate('${dayKey}')" class="h-9 rounded-xl flex flex-col items-center justify-center relative transition text-xs font-medium ${
             isSelected ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30' :
             isToday ? 'border border-indigo-500/50 text-indigo-300 bg-indigo-950/30' :
             'bg-[#0b0e14] text-slate-300 hover:bg-slate-800'
@@ -1056,7 +1164,7 @@
       titleEl.innerText = `Релизы на ${formattedDateName}`;
 
       if (state.calendarMode === 'general') {
-        const list = state.trackingList.filter(item => getAnimeReleaseInfo(item.next_episode_at, item.status).isExact && String(item.next_episode_at).slice(0, 10) === state.selectedDateStr);
+        const list = state.trackingList.filter(item => getAnimeReleaseInfo(item.next_episode_at, item.status).isExact && toLocalDateKey(item.next_episode_at) === state.selectedDateStr);
         if (list.length === 0) {
           container.innerHTML = `<div class="text-center py-10 text-slate-500 text-xs">Нет релизов в этот день</div>`;
           return;
@@ -1079,7 +1187,6 @@
           `;
         }).join('');
       } else {
-        // Dub schedule mode
         const allDubEps = getExpandedDubEpisodes();
         const list = allDubEps.filter(ep => ep.date_str === state.selectedDateStr);
 
@@ -1126,6 +1233,7 @@
       }
     }
 
+    // 2. SUPPORT ONGOING / START EP IN DUB SCHEDULE MODAL
     async function openDubModalForTracking(animeId) {
       const item = state.trackingList.find(t => Number(t.anime_id) === Number(animeId));
       if (!item) return;
@@ -1133,7 +1241,26 @@
       const existingDub = state.dubScheduleList.find(d => Number(d.anime_id) === Number(animeId));
       state.dubModalAnime = item;
 
-      document.getElementById('dub-date').value = existingDub ? existingDub.first_ep_date : new Date().toISOString().slice(0, 10);
+      // Start episode: if ongoing and episodes_aired > 0, suggest episodes_aired + 1, else 1
+      const suggestedStartEp = existingDub ? (existingDub.start_ep || 1) : ((item.episodes_aired || 0) > 0 ? (item.episodes_aired + 1) : 1);
+      document.getElementById('dub-start-ep').value = suggestedStartEp;
+
+      // Nearest episode date/time: next_episode_at converted to datetime-local format YYYY-MM-DDTHH:MM
+      let defaultDateTime = new Date().toISOString().slice(0, 16);
+      if (item.next_episode_at) {
+        try {
+          const d = new Date(item.next_episode_at);
+          if (!isNaN(d.getTime())) {
+            const pad = n => String(n).padStart(2, '0');
+            defaultDateTime = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+          }
+        } catch (e) {}
+      }
+      if (existingDub && existingDub.first_ep_date) {
+        defaultDateTime = existingDub.first_ep_date.slice(0, 16);
+      }
+
+      document.getElementById('dub-datetime').value = defaultDateTime;
       document.getElementById('dub-total-eps').value = existingDub ? existingDub.total_episodes : (item.episodes || 12);
       document.getElementById('dub-actors').value = existingDub ? existingDub.actors : '';
       document.getElementById('dub-subbers').value = existingDub ? existingDub.subbers : '';
@@ -1151,7 +1278,8 @@
         anime_id: Number(item.anime_id),
         title: item.title,
         poster: item.poster,
-        first_ep_date: document.getElementById('dub-date').value,
+        start_ep: parseInt(document.getElementById('dub-start-ep').value) || 1,
+        first_ep_date: document.getElementById('dub-datetime').value,
         total_episodes: parseInt(document.getElementById('dub-total-eps').value) || 12,
         actors: document.getElementById('dub-actors').value,
         subbers: document.getElementById('dub-subbers').value,
