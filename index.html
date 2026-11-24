@@ -232,7 +232,7 @@
           <select id="report-select-anime" onchange="onReportAnimeChange()" class="bg-[#151a24] border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
             <option value="">-- Выберите релиз --</option>
           </select>
-          <select id="report-select-ep" onchange="renderReportsTabContent()" class="bg-[#151a24] border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 w-24">
+          <select id="report-select-ep" onchange="onReportEpChange()" class="bg-[#151a24] border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 w-24">
             <option value="1">Серия 1</option>
           </select>
         </div>
@@ -514,6 +514,13 @@
         <div class="bg-[#0b0e14] p-3.5 rounded-2xl border border-white/[0.08] space-y-2">
           <h4 class="font-bold text-amber-300 text-sm">3. 🚨 Команда /должники:</h4>
           <p>Напишите боту в личку или в чат команду <code class="text-indigo-400 font-bold">/должники</code>, чтобы увидеть список только тех, кто ещё не сдал свою часть.</p>
+        </div>
+
+        <div class="bg-[#0b0e14] p-3.5 rounded-2xl border border-white/[0.08] space-y-2">
+          <h4 class="font-bold text-rose-300 text-sm">4. 🛠 Фиксы (Правки):</h4>
+          <p><strong class="text-white">Для звукаря (выдача фиксов):</strong> напишите в теме тайтла команду <code class="text-indigo-400 font-bold">/фиксы 8 @актер1 @актер2</code> (указав номер серии и теги тех, кому нужны правки).</p>
+          <p><strong class="text-white">Для актеров (сдача фиксов):</strong> назовите файл так, чтобы в имени было слово <code class="text-indigo-300 font-bold">фикс</code> (или <code class="text-indigo-300">fix</code>, <code class="text-indigo-300">правка</code>), номер серии, ваш ник и тайтл (например: <code class="text-indigo-300">ep8 Светлячки - Алена фикс.flac</code>), и отправьте в тему тайтла с подписью <code class="text-indigo-400 font-bold">#ботзапиши</code>.</p>
+          <p class="text-slate-400">Бот автоматически отметит зачёт фикса и позовёт звукаря, когда все правки будут сданы.</p>
         </div>
 
         <div class="bg-[#0b0e14] p-3.5 rounded-2xl border border-white/[0.08] space-y-1.5">
@@ -837,6 +844,7 @@
       forumTopics: [],
       teamMembers: [],
       dubSubmissions: [],
+      dubFixes: [],
       episodeCasts: [],
       curatedShows: [],
       activeTab: 'search',
@@ -970,6 +978,9 @@
 
         const { data: casts } = await supabaseClient.from('episode_casts').select('*');
         if (casts) state.episodeCasts = casts;
+
+        const { data: fixes } = await supabaseClient.from('dub_fixes').select('*');
+        if (fixes) state.dubFixes = fixes;
       } catch (e) {
         console.warn("Failed to load metadata tables:", e);
       }
@@ -2213,12 +2224,14 @@
 
     async function initReportsTab() {
       try {
-        const [{ data: subs }, { data: casts }] = await Promise.all([
+        const [{ data: subs }, { data: casts }, { data: fixes }] = await Promise.all([
           supabaseClient.from('dub_submissions').select('*'),
-          supabaseClient.from('episode_casts').select('*')
+          supabaseClient.from('episode_casts').select('*'),
+          supabaseClient.from('dub_fixes').select('*')
         ]);
         if (subs) state.dubSubmissions = subs;
         if (casts) state.episodeCasts = casts;
+        if (fixes) state.dubFixes = fixes;
       } catch (e) {
         console.warn("Failed to refresh report tables:", e);
       }
@@ -2240,6 +2253,27 @@
       onReportAnimeChange();
     }
 
+    async function loadEpisodeFixes(animeId, epNum) {
+      if (!animeId || !epNum) return;
+      try {
+        const { data: fixes, error } = await supabaseClient
+          .from('dub_fixes')
+          .select('*')
+          .match({ anime_id: Number(animeId), ep_num: Number(epNum) });
+        if (!error && Array.isArray(fixes)) {
+          state.dubFixes = [
+            ...state.dubFixes.filter(fx => !(Number(fx.anime_id) === Number(animeId) && Number(fx.ep_num) === Number(epNum))),
+            ...fixes
+          ];
+          if (Number(currentReportAnimeId) === Number(animeId) && Number(currentReportEpNum) === Number(epNum)) {
+            renderReportsTabContent();
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to load dub_fixes:", e);
+      }
+    }
+
     function onReportAnimeChange() {
       const selectAnime = document.getElementById('report-select-anime');
       currentReportAnimeId = Number(selectAnime.value);
@@ -2258,6 +2292,38 @@
       selectEp.innerHTML = epHtml;
       currentReportEpNum = Number(selectEp.value);
       renderReportsTabContent();
+      loadEpisodeFixes(currentReportAnimeId, currentReportEpNum);
+    }
+
+    function onReportEpChange() {
+      const selectEp = document.getElementById('report-select-ep');
+      currentReportEpNum = Number(selectEp.value);
+      renderReportsTabContent();
+      loadEpisodeFixes(currentReportAnimeId, currentReportEpNum);
+    }
+
+    function escapeReportHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function formatFixTime(ts) {
+      if (!ts) return '';
+      try {
+        let raw = String(ts).trim();
+        if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(raw) && !/(Z|[+-]\d{2}:?\d{2})$/i.test(raw)) {
+          raw += 'Z';
+        }
+        const d = new Date(raw);
+        if (Number.isNaN(d.getTime())) return '';
+        return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      } catch (e) {
+        return '';
+      }
     }
 
     function renderReportsTabContent() {
@@ -2401,6 +2467,68 @@
              ${show.curator ? `<span class="text-[11px] text-amber-300">👑 Куратор: @${String(show.curator).replace(/^@/, '')}</span>` : ''}
            </div>`;
 
+      const epFixes = state.dubFixes
+        .filter(fx => Number(fx.anime_id) === currentReportAnimeId && Number(fx.ep_num) === currentReportEpNum)
+        .slice()
+        .sort((a, b) => Number(Boolean(a.is_done)) - Number(Boolean(b.is_done)));
+
+      let fixesCardHtml = '';
+      if (epFixes.length > 0) {
+        const doneFixCount = epFixes.filter(fx => Boolean(fx.is_done)).length;
+        const fixRowsHtml = epFixes.map(fx => {
+          const fxUname = String(fx.username || '').replace(/^@/, '').trim().toLowerCase();
+          const member = state.teamMembers.find(m =>
+            (m.username && m.username.replace(/^@/, '').toLowerCase() === fxUname) ||
+            (m.nickname && fx.nickname && m.nickname.trim().toLowerCase() === fx.nickname.trim().toLowerCase())
+          );
+          const fxNick = (member && member.nickname) ? member.nickname : (fx.nickname || fxUname || 'Участник');
+          const encUname = encodeURIComponent(fxUname);
+          const doneTime = formatFixTime(fx.submitted_at);
+          const fileNameHtml = fx.file_name
+            ? `<span class="text-[10px] text-slate-400 font-mono break-all">(${escapeReportHtml(fx.file_name)})</span>`
+            : '';
+
+          const statusBadgeHtml = fx.is_done
+            ? `<span class="inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-medium whitespace-nowrap">✅ Сдан${doneTime ? ` · ${escapeReportHtml(doneTime)}` : ''}</span>`
+            : `<span class="inline-flex items-center text-[10px] px-2.5 py-0.5 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30 font-medium whitespace-nowrap">⏳ Ожидается фикс</span>`;
+
+          const actionButtonsHtml = canManageThisReport
+            ? `<div class="flex items-center gap-1.5">
+                ${!fx.is_done ? `<button onclick="markFixDone(${currentReportAnimeId}, ${currentReportEpNum}, '${encUname}')" class="text-[10px] bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded-lg font-medium transition whitespace-nowrap">✅ Зачесть фикс</button>` : ''}
+                <button onclick="deleteFix(${currentReportAnimeId}, ${currentReportEpNum}, '${encUname}')" title="Удалить фикс" aria-label="Удалить фикс" class="text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 px-2 py-1 rounded-lg text-[11px] transition">🗑</button>
+              </div>`
+            : '';
+
+          return `
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[#0b0e14] px-3.5 py-2.5 rounded-xl border border-white/[0.08]">
+              <div class="space-y-0.5 min-w-0">
+                <div class="text-xs text-slate-200 flex flex-wrap items-center gap-1.5">
+                  <span>🎭 ${escapeReportHtml(fxNick)} <span class="text-slate-400">(@${escapeReportHtml(fxUname)})</span></span>
+                  ${fx.is_done ? fileNameHtml : ''}
+                </div>
+                ${fx.comment ? `<div class="text-[11px] text-slate-400">💬 ${escapeReportHtml(fx.comment)}</div>` : ''}
+              </div>
+              <div class="flex flex-wrap items-center gap-2 shrink-0">
+                ${statusBadgeHtml}
+                ${actionButtonsHtml}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        fixesCardHtml = `
+          <div id="reports-fixes-card" class="col-span-full bg-[#151a24] border border-white/[0.08] rounded-2xl p-4 shadow-lg space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h3 class="text-sm font-bold text-rose-300">🛠 Фиксы (правки по серии)</h3>
+              <span class="text-[11px] text-slate-400 font-medium">Выполнено: ${doneFixCount} из ${epFixes.length}</span>
+            </div>
+            <div class="space-y-2 max-h-72 overflow-y-auto">
+              ${fixRowsHtml}
+            </div>
+          </div>
+        `;
+      }
+
       container.innerHTML = `
         ${castSourceBanner}
 
@@ -2420,7 +2548,86 @@
             ${pendingHtml}
           </div>
         </div>
+
+        ${fixesCardHtml}
       `;
+    }
+
+    async function markFixDone(animeId, epNum, encodedUsername) {
+      const accessibleShows = getAccessibleReportShows();
+      const show = accessibleShows.find(s => Number(s.anime_id) === Number(animeId));
+      if (!show || !canEditShowCast(show)) {
+        alert('У вас нет прав на редактирование фиксов этого релиза.');
+        return;
+      }
+
+      const username = decodeURIComponent(encodedUsername).replace(/^@/, '').trim().toLowerCase();
+      const existing = state.dubFixes.find(fx =>
+        Number(fx.anime_id) === Number(animeId) &&
+        Number(fx.ep_num) === Number(epNum) &&
+        String(fx.username || '').replace(/^@/, '').trim().toLowerCase() === username
+      );
+
+      const nowIso = new Date().toISOString();
+      const fileName = existing?.file_name || 'manual_admin_fix';
+
+      if (existing) {
+        existing.is_done = true;
+        existing.submitted_at = nowIso;
+        existing.file_name = fileName;
+      }
+      renderReportsTabContent();
+
+      try {
+        const matchFilter = existing?.id
+          ? { id: existing.id }
+          : { anime_id: Number(animeId), ep_num: Number(epNum), username };
+        const { error } = await supabaseClient
+          .from('dub_fixes')
+          .update({ is_done: true, submitted_at: nowIso, file_name: fileName })
+          .match(matchFilter);
+        if (error) throw error;
+        showToast('Фикс зачтён!');
+      } catch (err) {
+        console.warn('Error marking fix done:', err);
+        alert('Ошибка при зачёте фикса: ' + (err?.message || err));
+      }
+    }
+
+    async function deleteFix(animeId, epNum, encodedUsername) {
+      const accessibleShows = getAccessibleReportShows();
+      const show = accessibleShows.find(s => Number(s.anime_id) === Number(animeId));
+      if (!show || !canEditShowCast(show)) {
+        alert('У вас нет прав на удаление фиксов этого релиза.');
+        return;
+      }
+
+      if (!confirm('Удалить этот фикс из списка?')) return;
+
+      const username = decodeURIComponent(encodedUsername).replace(/^@/, '').trim().toLowerCase();
+      const existing = state.dubFixes.find(fx =>
+        Number(fx.anime_id) === Number(animeId) &&
+        Number(fx.ep_num) === Number(epNum) &&
+        String(fx.username || '').replace(/^@/, '').trim().toLowerCase() === username
+      );
+
+      state.dubFixes = state.dubFixes.filter(fx => !(
+        Number(fx.anime_id) === Number(animeId) &&
+        Number(fx.ep_num) === Number(epNum) &&
+        String(fx.username || '').replace(/^@/, '').trim().toLowerCase() === username
+      ));
+      renderReportsTabContent();
+
+      try {
+        const matchFilter = existing?.id
+          ? { id: existing.id }
+          : { anime_id: Number(animeId), ep_num: Number(epNum), username };
+        const { error } = await supabaseClient.from('dub_fixes').delete().match(matchFilter);
+        if (error) throw error;
+        showToast('Фикс удалён');
+      } catch (err) {
+        console.warn('Error deleting fix:', err);
+      }
     }
 
     function openManualSubModal() {
