@@ -235,8 +235,8 @@
           <select id="report-select-ep" onchange="onReportEpChange()" class="bg-[#151a24] border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 min-w-[110px]">
             <option value="">Нет серий</option>
           </select>
-          <button id="btn-delete-report-ep" onclick="deleteEpisodeFromReport()" class="hidden bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 rounded-xl px-3 py-2 text-xs font-medium transition whitespace-nowrap">
-            🗑 Убрать серию из отчёта
+          <button id="btn-delete-report-ep" onclick="deleteEntireEpisodeFromReport(currentReportAnimeId, currentReportEpNum)" class="hidden bg-rose-600 hover:bg-rose-500 text-white border border-rose-500/40 rounded-xl px-3 py-2 text-xs font-semibold transition whitespace-nowrap shadow-md shadow-rose-600/20">
+            🗑 Удалить серию
           </button>
         </div>
       </div>
@@ -244,6 +244,49 @@
       <!-- Reports Container Blocks -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="reports-blocks-container">
         <!-- Rendered via JS -->
+      </div>
+    </div>
+
+    <!-- TAB 7: SETTINGS (Admin / Owner Only) -->
+    <div id="tab-settings" class="space-y-5 hidden">
+      <div>
+        <h2 class="text-lg font-bold text-white">⚙️ Настройки</h2>
+        <p class="text-xs text-slate-400">Управление уведомлениями бота, доступами и памяткой команды</p>
+      </div>
+
+      <!-- Card 1: Bot Reminders & Notifications -->
+      <div class="bg-[#151a24] border border-white/[0.08] rounded-2xl p-5 shadow-lg space-y-4">
+        <div class="flex items-center justify-between gap-2">
+          <h3 class="text-sm font-bold text-white">🔔 Напоминания и уведомления бота</h3>
+        </div>
+
+        <label for="settings-auto-ping-debtors" class="flex items-center justify-between gap-4 bg-[#0b0e14] p-4 rounded-2xl border border-white/[0.08] cursor-pointer hover:border-indigo-500/40 transition">
+          <div class="space-y-1 min-w-0">
+            <span class="text-xs font-semibold text-slate-100 block">Авто-напоминания должникам (тег каждые 4 часа в чате)</span>
+            <span class="text-[11px] text-slate-400 block">Управляет автоматическим тегом несдавших участников в рабочих темах</span>
+          </div>
+          <div class="relative inline-flex items-center shrink-0">
+            <input type="checkbox" id="settings-auto-ping-debtors" onchange="toggleAutoPingDebtors(this.checked)" class="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10 peer" />
+            <div class="pointer-events-none w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:bg-indigo-600 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5"></div>
+          </div>
+        </label>
+
+        <div id="settings-auto-ping-status" class="text-xs px-3.5 py-2.5 rounded-xl border bg-slate-900/70 text-slate-300 border-white/[0.08]">
+          Загрузка настройки...
+        </div>
+      </div>
+
+      <!-- Card 2: Quick Admin Shortcuts -->
+      <div class="bg-[#151a24] border border-white/[0.08] rounded-2xl p-5 shadow-lg space-y-3">
+        <h3 class="text-sm font-bold text-white">🛠 Администрирование и справка</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button id="settings-access-btn" onclick="openAccessModal()" class="hidden flex items-center justify-center gap-2 bg-violet-600/20 hover:bg-violet-600/30 text-violet-200 border border-violet-500/30 py-3 px-4 rounded-xl text-xs font-semibold transition">
+            <span>👥 Управление доступами и темами чата</span>
+          </button>
+          <button onclick="openInstructionModal()" class="flex items-center justify-center gap-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-200 border border-indigo-500/30 py-3 px-4 rounded-xl text-xs font-semibold transition">
+            <span>📖 Инструкция для команды</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -625,32 +668,62 @@
     </div>
   </div>
 
-  <!-- Bottom Navigation Bar (6 Tabs) -->
-  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-[#151a24]/95 backdrop-blur-md border-t border-white/[0.08] px-4 py-2" style="padding-bottom: env(safe-area-inset-bottom);">
-    <div class="max-w-md mx-auto flex justify-around">
-      <button onclick="switchTab('search')" id="nav-search" class="flex flex-col items-center py-1.5 px-2 rounded-2xl transition text-indigo-400 bg-indigo-600/10">
+  <!-- Modal 9: Add Member to Episode Cast -->
+  <div id="modal-add-ep-actor" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-[#151a24] border border-white/[0.08] rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold text-white">🎭 Добавить в серию</h3>
+        <button onclick="closeModal('modal-add-ep-actor')" class="text-slate-400 hover:text-white" aria-label="Закрыть окно">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <p id="add-ep-actor-subtitle" class="text-xs text-slate-400">Выберите участника команды для добавления в озвучку серии.</p>
+
+      <div>
+        <label class="text-xs font-semibold text-slate-300 mb-1.5 block">Участник команды</label>
+        <select id="add-ep-actor-select" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+          <!-- Populated via JS -->
+        </select>
+      </div>
+
+      <div class="flex space-x-3 pt-2">
+        <button onclick="closeModal('modal-add-ep-actor')" class="flex-1 bg-[#0b0e14] hover:bg-slate-850 text-slate-300 py-3 rounded-xl font-medium text-xs transition border border-white/[0.08]">Отмена</button>
+        <button onclick="saveAddedEpisodeActor()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-medium text-xs transition shadow-lg shadow-indigo-600/30">Добавить в серию</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation Bar (7 Tabs) -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-[#151a24]/95 backdrop-blur-md border-t border-white/[0.08] px-1 sm:px-4 py-1.5 sm:py-2" style="padding-bottom: env(safe-area-inset-bottom);">
+    <div class="max-w-xl mx-auto flex justify-around items-center w-full">
+      <button onclick="switchTab('search')" id="nav-search" class="flex-1 min-w-0 flex flex-col items-center py-1.5 px-0.5 sm:px-2 rounded-2xl transition text-indigo-400 bg-indigo-600/10">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <span class="text-[10px] font-medium mt-1">Поиск</span>
+        <span class="text-[9px] sm:text-[10px] font-medium mt-1 truncate max-w-full">Поиск</span>
       </button>
-      <button onclick="switchTab('tracking')" id="nav-tracking" class="flex flex-col items-center py-1.5 px-2 rounded-2xl transition text-slate-400 hover:text-slate-200">
+      <button onclick="switchTab('tracking')" id="nav-tracking" class="flex-1 min-w-0 flex flex-col items-center py-1.5 px-0.5 sm:px-2 rounded-2xl transition text-slate-400 hover:text-slate-200">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
-        <span class="text-[10px] font-medium mt-1">Отслеживаю</span>
+        <span class="text-[9px] sm:text-[10px] font-medium mt-1 truncate max-w-full">Отслеживаю</span>
       </button>
-      <button onclick="switchTab('calendar')" id="nav-calendar" class="flex flex-col items-center py-1.5 px-2 rounded-2xl transition text-slate-400 hover:text-slate-200">
+      <button onclick="switchTab('calendar')" id="nav-calendar" class="flex-1 min-w-0 flex flex-col items-center py-1.5 px-0.5 sm:px-2 rounded-2xl transition text-slate-400 hover:text-slate-200">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        <span class="text-[10px] font-medium mt-1">Календарь</span>
+        <span class="text-[9px] sm:text-[10px] font-medium mt-1 truncate max-w-full">Календарь</span>
       </button>
-      <button onclick="switchTab('history')" id="nav-history" class="flex flex-col items-center py-1.5 px-2 rounded-2xl transition text-slate-400 hover:text-slate-200">
+      <button onclick="switchTab('history')" id="nav-history" class="flex-1 min-w-0 flex flex-col items-center py-1.5 px-0.5 sm:px-2 rounded-2xl transition text-slate-400 hover:text-slate-200">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
-        <span class="text-[10px] font-medium mt-1">История</span>
+        <span class="text-[9px] sm:text-[10px] font-medium mt-1 truncate max-w-full">История</span>
       </button>
-      <button onclick="switchTab('team')" id="nav-team" class="flex flex-col items-center py-1.5 px-2 rounded-2xl transition text-slate-400 hover:text-slate-200">
+      <button onclick="switchTab('team')" id="nav-team" class="flex-1 min-w-0 flex flex-col items-center py-1.5 px-0.5 sm:px-2 rounded-2xl transition text-slate-400 hover:text-slate-200">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <span class="text-[10px] font-medium mt-1">Команда</span>
+        <span class="text-[9px] sm:text-[10px] font-medium mt-1 truncate max-w-full">Команда</span>
       </button>
-      <button onclick="switchTab('reports')" id="nav-reports" class="flex flex-col items-center py-1.5 px-2 rounded-2xl transition text-slate-400 hover:text-slate-200">
+      <button onclick="switchTab('reports')" id="nav-reports" class="flex-1 min-w-0 flex flex-col items-center py-1.5 px-0.5 sm:px-2 rounded-2xl transition text-slate-400 hover:text-slate-200">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-        <span class="text-[10px] font-medium mt-1">Отчёты</span>
+        <span class="text-[9px] sm:text-[10px] font-medium mt-1 truncate max-w-full">Отчёты</span>
+      </button>
+      <button onclick="switchTab('settings')" id="nav-settings" class="hidden flex-1 min-w-0 flex flex-col items-center py-1.5 px-0.5 sm:px-2 rounded-2xl transition text-slate-400 hover:text-slate-200">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span class="text-[9px] sm:text-[10px] font-medium mt-1 truncate max-w-full">Настройки</span>
       </button>
     </div>
   </nav>
@@ -872,7 +945,8 @@
       trackingModalAnime: null,
       dubModalAnime: null,
       historyModalItem: null,
-      editingMemberId: null
+      editingMemberId: null,
+      autoPingDebtors: false
     };
 
     // TEAM, ROLES & CURATOR HELPERS
@@ -955,6 +1029,7 @@
 
       updateRoleHeaderUI();
       updateReportsTabVisibility();
+      updateSettingsTabVisibility();
     }
 
     // INITIALIZATION ON LOAD
@@ -1044,20 +1119,48 @@
       }
     }
 
-    // SWITCH TABS (6 Tabs including Reports)
+    function updateSettingsTabVisibility() {
+      const settingsNavBtn = document.getElementById('nav-settings');
+      const settingsAccessBtn = document.getElementById('settings-access-btn');
+      if (settingsNavBtn) {
+        if (state.isAdmin) {
+          settingsNavBtn.classList.remove('hidden');
+        } else {
+          settingsNavBtn.classList.add('hidden');
+          if (state.activeTab === 'settings') {
+            switchTab('search');
+          }
+        }
+      }
+      if (settingsAccessBtn) {
+        if (state.isOwner) {
+          settingsAccessBtn.classList.remove('hidden');
+        } else {
+          settingsAccessBtn.classList.add('hidden');
+        }
+      }
+    }
+
+    // SWITCH TABS (7 Tabs including Reports & Settings)
     function switchTab(tabId) {
       if (tabId === 'reports' && !state.canViewReports) {
         alert('У вас нет доступа к отчётам.');
         return;
       }
+      if (tabId === 'settings' && !state.isAdmin) {
+        alert('У вас нет доступа к настройкам.');
+        return;
+      }
 
       state.activeTab = tabId;
-      ['search', 'tracking', 'calendar', 'history', 'team', 'reports'].forEach(t => {
+      ['search', 'tracking', 'calendar', 'history', 'team', 'reports', 'settings'].forEach(t => {
         const el = document.getElementById(`tab-${t}`);
         if (el) el.classList.add('hidden');
         const navBtn = document.getElementById(`nav-${t}`);
         if (navBtn) {
-          navBtn.className = "flex flex-col items-center py-1.5 px-2 rounded-2xl transition text-slate-400 hover:text-slate-200";
+          const isHidden = navBtn.classList.contains('hidden');
+          navBtn.className = "flex-1 min-w-0 flex flex-col items-center py-1.5 px-0.5 sm:px-2 rounded-2xl transition text-slate-400 hover:text-slate-200";
+          if (isHidden) navBtn.classList.add('hidden');
           const svg = navBtn.querySelector('svg');
           if (svg) svg.style.strokeWidth = "1.75";
         }
@@ -1068,7 +1171,9 @@
 
       const activeNav = document.getElementById(`nav-${tabId}`);
       if (activeNav) {
-        activeNav.className = "flex flex-col items-center py-1.5 px-2 rounded-2xl transition text-indigo-400 bg-indigo-600/10";
+        const isHidden = activeNav.classList.contains('hidden');
+        activeNav.className = "flex-1 min-w-0 flex flex-col items-center py-1.5 px-0.5 sm:px-2 rounded-2xl transition text-indigo-400 bg-indigo-600/10";
+        if (isHidden) activeNav.classList.add('hidden');
         const svg = activeNav.querySelector('svg');
         if (svg) svg.style.strokeWidth = "2.5";
       }
@@ -1078,6 +1183,7 @@
       if (tabId === 'history') renderHistory();
       if (tabId === 'team') renderTeam();
       if (tabId === 'reports') initReportsTab();
+      if (tabId === 'settings') initSettingsTab();
     }
 
     // INSTRUCTION MODAL
@@ -2534,7 +2640,7 @@
                   <span class="text-[10px] text-emerald-400 font-medium whitespace-nowrap">✅ Сдал дорожку</span>
                   ${canManageThisReport ? `
                     <button onclick="deleteSubmission('${matchedSub.id}')" title="Удалить только сдачу" class="text-rose-400 hover:text-rose-300 p-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
-                    <button onclick="removeActorFromEpisode('${encToken}')" class="text-[10px] bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 px-2 py-1 rounded-lg font-medium transition whitespace-nowrap">❌ Убрать</button>
+                    <button onclick="removeActorFromEpisode(${currentReportAnimeId}, ${currentReportEpNum}, '${encToken}')" class="text-[10px] bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 px-2 py-1 rounded-lg font-medium transition whitespace-nowrap">❌ Убрать</button>
                   ` : ''}
                 </div>
               </div>
@@ -2555,7 +2661,7 @@
                 <span class="text-[10px] text-emerald-400 font-medium whitespace-nowrap">✅ Сдал дорожку</span>
                 ${canManageThisReport ? `
                   <button onclick="deleteSubmission('${sub.id}')" title="Удалить только сдачу" class="text-rose-400 hover:text-rose-300 p-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
-                  <button onclick="removeActorFromEpisode('${encToken}')" class="text-[10px] bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 px-2 py-1 rounded-lg font-medium transition whitespace-nowrap">❌ Убрать</button>
+                  <button onclick="removeActorFromEpisode(${currentReportAnimeId}, ${currentReportEpNum}, '${encToken}')" class="text-[10px] bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 px-2 py-1 rounded-lg font-medium transition whitespace-nowrap">❌ Убрать</button>
                 ` : ''}
               </div>
             </div>
@@ -2592,7 +2698,11 @@
               <div class="text-xs text-slate-300 min-w-0">🎭 ${escapeReportHtml(nick)} (@${escapeReportHtml(uname)})</div>
               <div class="flex items-center space-x-2 shrink-0">
                 <span class="text-[10px] text-amber-400 font-medium whitespace-nowrap">⏳ Не сдал</span>
-                ${canManageThisReport ? `<button onclick="removeActorFromEpisode('${encToken}')" class="text-[10px] bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 px-2 py-1 rounded-lg font-medium transition whitespace-nowrap">❌ Убрать</button>` : ''}
+                ${canManageThisReport ? `
+                  <button onclick="removeActorFromEpisode(${currentReportAnimeId}, ${currentReportEpNum}, '${encToken}')" title="Убрать ${escapeReportHtml(nick)} из серии" aria-label="Убрать ${escapeReportHtml(nick)} из серии" class="inline-flex items-center justify-center bg-rose-600/20 hover:bg-rose-600/40 text-rose-400 hover:text-rose-200 border border-rose-500/40 px-2 py-1 rounded-lg text-[11px] font-bold transition shrink-0">
+                    ❌
+                  </button>
+                ` : ''}
               </div>
             </div>
           `;
@@ -2603,30 +2713,6 @@
         pendingHtml = `<div class="text-emerald-400 text-xs py-4 text-center font-medium">🎉 Все материалы на эту серию полностью сданы!</div>`;
       }
 
-      // Top episode cast block (always visible when castRow exists, and shows add-actor control for admins/curators)
-      const availableToAddMembers = state.teamMembers.filter(m => {
-        const tok = (m.username || m.nickname || '').replace(/^@/, '').trim();
-        if (!tok) return false;
-        return !assignedActors.some(act => isSamePersonToken(act, tok));
-      });
-
-      const addActorOptionsHtml = availableToAddMembers.map(m => {
-        const val = m.username ? m.username.replace(/^@/, '') : m.nickname;
-        return `<option value="${escapeReportHtml(val)}">${escapeReportHtml(m.nickname)} (@${escapeReportHtml(m.username || 'none')})</option>`;
-      }).join('');
-
-      const addActorControlHtml = canManageThisReport ? `
-        <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 pt-2 border-t border-white/[0.06]">
-          <select id="report-add-actor-select" class="flex-1 min-w-[160px] bg-[#0b0e14] border border-white/[0.08] rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
-            <option value="">-- Выбрать актера для добавления --</option>
-            ${addActorOptionsHtml}
-          </select>
-          <button onclick="addActorToEpisodeCast()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-xl text-xs font-medium transition whitespace-nowrap">
-            + Добавить актера в серию
-          </button>
-        </div>
-      ` : '';
-
       const castChipsHtml = assignedActors.length > 0
         ? assignedActors.map(act => {
             const { cleanAct, nick, uname } = matchActorData(act);
@@ -2634,7 +2720,7 @@
             return `
               <span class="inline-flex items-center gap-1.5 bg-[#0b0e14] border border-white/[0.08] px-2.5 py-1 rounded-xl text-xs text-slate-200">
                 <span>🎭 ${escapeReportHtml(nick)} <span class="text-slate-400">(@${escapeReportHtml(uname)})</span></span>
-                ${canManageThisReport ? `<button onclick="removeActorFromEpisode('${encToken}')" title="Убрать актера из серии" class="text-rose-400 hover:text-rose-300 text-[11px] font-bold leading-none px-0.5">❌</button>` : ''}
+                ${canManageThisReport ? `<button onclick="removeActorFromEpisode(${currentReportAnimeId}, ${currentReportEpNum}, '${encToken}')" title="Убрать ${escapeReportHtml(nick)} из серии" aria-label="Убрать ${escapeReportHtml(nick)} из серии" class="text-rose-400 hover:text-rose-300 text-[11px] font-bold leading-none px-0.5">❌</button>` : ''}
               </span>
             `;
           }).join('')
@@ -2649,7 +2735,6 @@
              <div class="flex flex-wrap gap-2">
                ${castChipsHtml}
              </div>
-             ${addActorControlHtml}
            </div>`
         : `<div id="reports-episode-cast-card" class="col-span-full bg-[#151a24] border border-white/[0.08] rounded-2xl p-4 space-y-3">
              <div class="flex flex-wrap items-center justify-between gap-2">
@@ -2659,7 +2744,6 @@
              <div class="flex flex-wrap gap-2">
                ${castChipsHtml}
              </div>
-             ${addActorControlHtml}
            </div>`;
 
       const epFixes = state.dubFixes
@@ -2727,8 +2811,8 @@
       container.innerHTML = `
         ${castSourceBanner}
 
-        <div class="bg-[#151a24] border border-white/[0.08] rounded-2xl p-4 shadow-lg space-y-3">
-          <div class="flex items-center justify-between">
+        <div id="reports-submitted-card" class="bg-[#151a24] border border-white/[0.08] rounded-2xl p-4 shadow-lg space-y-3">
+          <div class="flex items-center justify-between gap-2">
             <h3 class="text-sm font-bold text-emerald-400">✅ Уже сдали (${submittedCount})</h3>
             ${canManageThisReport ? `<button onclick="openManualSubModal()" class="text-[11px] bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-lg transition">+ Отметить вручную</button>` : ''}
           </div>
@@ -2737,8 +2821,11 @@
           </div>
         </div>
 
-        <div class="bg-[#151a24] border border-white/[0.08] rounded-2xl p-4 shadow-lg space-y-3">
-          <h3 class="text-sm font-bold text-amber-400">⏳ Ещё должны сдать (${pendingCount})</h3>
+        <div id="reports-pending-card" class="bg-[#151a24] border border-white/[0.08] rounded-2xl p-4 shadow-lg space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="text-sm font-bold text-amber-400">⏳ Ещё должны сдать (${pendingCount})</h3>
+            ${canManageThisReport ? `<button onclick="openAddEpisodeActorModal()" class="text-[11px] bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-lg font-medium transition whitespace-nowrap">+ Добавить в серию</button>` : ''}
+          </div>
           <div class="space-y-2 max-h-72 overflow-y-auto">
             ${pendingHtml}
           </div>
@@ -2748,97 +2835,119 @@
       `;
     }
 
-    async function removeActorFromEpisode(encodedToken) {
+    async function removeActorFromEpisode(animeId, epNum, username) {
+      const targetAnimeId = Number(animeId || currentReportAnimeId);
+      const targetEpNum = Number(epNum || currentReportEpNum);
+      if (!targetAnimeId || !targetEpNum) return;
+
       const accessibleShows = getAccessibleReportShows();
-      const show = accessibleShows.find(s => Number(s.anime_id) === currentReportAnimeId);
+      const show = accessibleShows.find(s => Number(s.anime_id) === targetAnimeId)
+        || state.dubScheduleList.find(s => Number(s.anime_id) === targetAnimeId);
       if (!show || !canEditShowCast(show)) {
         alert('У вас нет прав на редактирование состава этой серии.');
         return;
       }
-      if (!currentReportEpNum) return;
 
-      const targetToken = decodeURIComponent(encodedToken).replace(/^@/, '').trim().toLowerCase();
-      const member = resolveTeamMemberByToken(targetToken);
-      const displayName = member ? `${member.nickname} (@${member.username || targetToken})` : `@${targetToken}`;
+      const rawTarget = decodeURIComponent(String(username || '')).replace(/^@/, '').trim().toLowerCase();
+      if (!rawTarget) return;
 
-      if (!confirm(`Убрать ${displayName} из ${currentReportEpNum}-й серии?`)) return;
+      const member = resolveTeamMemberByToken(rawTarget);
+      const displayName = member ? `${member.nickname} (@${member.username || rawTarget})` : `@${rawTarget}`;
 
-      const existingCast = state.episodeCasts.find(
-        c => Number(c.anime_id) === currentReportAnimeId && Number(c.ep_num) === currentReportEpNum
-      );
-
-      let currentTokens = existingCast
-        ? parseTokens(existingCast.actors)
-        : parseTokens(show.actors);
-
-      if (!existingCast && currentTokens.length === 0) {
-        state.dubSubmissions
-          .filter(s => Number(s.anime_id) === currentReportAnimeId && Number(s.ep_num) === currentReportEpNum && (s.role_type === 'actor' || s.file_type === 'actor'))
-          .forEach(s => {
-            const t = (s.username || s.nickname || '').replace(/^@/, '').trim();
-            if (t && !currentTokens.some(x => isSamePersonToken(x, t))) {
-              currentTokens.push(t);
-            }
-          });
-      }
-
-      const updatedTokens = currentTokens.filter(tok => !isSamePersonToken(tok, targetToken));
-      const updatedActorsStr = updatedTokens.map(tok => `@${tok.replace(/^@/, '')}`).join(' ');
-      const subbersStr = existingCast ? (existingCast.subbers || '') : (show.subbers || '');
-
-      const matchingSubs = state.dubSubmissions.filter(s =>
-        Number(s.anime_id) === currentReportAnimeId &&
-        Number(s.ep_num) === currentReportEpNum &&
-        (s.role_type === 'actor' || s.file_type === 'actor') &&
-        (isSamePersonToken(s.username, targetToken) || isSamePersonToken(s.nickname, targetToken))
-      );
+      if (!confirm(`Убрать ${displayName} из ${targetEpNum}-й серии?`)) return;
 
       try {
-        if (existingCast) {
-          const { error: castErr } = await supabaseClient
-            .from('episode_casts')
-            .update({ actors: updatedActorsStr })
-            .match({ anime_id: currentReportAnimeId, ep_num: currentReportEpNum });
-          if (castErr) throw castErr;
-          existingCast.actors = updatedActorsStr;
+        // 1) Load row (anime_id, ep_num) from episode_casts
+        const { data: row, error: fetchErr } = await supabaseClient
+          .from('episode_casts')
+          .select('*')
+          .eq('anime_id', targetAnimeId)
+          .eq('ep_num', targetEpNum)
+          .maybeSingle();
+        if (fetchErr) throw fetchErr;
+
+        const isTargetMatch = (tok) => {
+          const cleanTok = String(tok || '').replace(/^@/, '').trim().toLowerCase();
+          if (!cleanTok) return false;
+          if (cleanTok === rawTarget) return true;
+          return isSamePersonToken(cleanTok, rawTarget);
+        };
+
+        if (row) {
+          // 2) Row exists: strip @username (case-insensitive, without @) and update by row.id
+          const currentTokens = parseTokens(row.actors);
+          const updatedTokens = currentTokens.filter(tok => !isTargetMatch(tok));
+          const newActorsString = updatedTokens.map(tok => `@${tok.replace(/^@/, '')}`).join(' ');
+
+          const updateQuery = row.id !== undefined && row.id !== null
+            ? supabaseClient.from('episode_casts').update({ actors: newActorsString }).eq('id', row.id)
+            : supabaseClient.from('episode_casts').update({ actors: newActorsString }).match({ anime_id: targetAnimeId, ep_num: targetEpNum });
+          const { error: updErr } = await updateQuery;
+          if (updErr) throw updErr;
+
+          const localCast = state.episodeCasts.find(
+            c => Number(c.anime_id) === targetAnimeId && Number(c.ep_num) === targetEpNum
+          );
+          if (localCast) {
+            localCast.actors = newActorsString;
+          } else {
+            state.episodeCasts.push({ ...row, actors: newActorsString });
+          }
         } else {
-          const { data: upserted, error: castErr } = await supabaseClient
+          // 3) No row in episode_casts yet: take show.actors from dub_schedule, remove @username, and upsert
+          const currentTokens = parseTokens(show.actors);
+          const updatedTokens = currentTokens.filter(tok => !isTargetMatch(tok));
+          const newActorsString = updatedTokens.map(tok => `@${tok.replace(/^@/, '')}`).join(' ');
+
+          const { data: upserted, error: upsErr } = await supabaseClient
             .from('episode_casts')
             .upsert({
-              anime_id: currentReportAnimeId,
-              ep_num: currentReportEpNum,
-              actors: updatedActorsStr,
-              subbers: subbersStr
+              anime_id: targetAnimeId,
+              ep_num: targetEpNum,
+              actors: newActorsString,
+              subbers: show.subbers || ''
             }, { onConflict: 'anime_id,ep_num' })
             .select();
-          if (castErr) throw castErr;
+          if (upsErr) throw upsErr;
+
           const savedRow = (upserted && upserted[0]) ? upserted[0] : {
-            anime_id: currentReportAnimeId,
-            ep_num: currentReportEpNum,
-            actors: updatedActorsStr,
-            subbers: subbersStr
+            anime_id: targetAnimeId,
+            ep_num: targetEpNum,
+            actors: newActorsString,
+            subbers: show.subbers || ''
           };
           state.episodeCasts.push(savedRow);
         }
 
-        for (const sub of matchingSubs) {
+        // 4) Delete any actor submission from dub_submissions by anime_id, ep_num, username
+        const { error: delByUnameErr } = await supabaseClient
+          .from('dub_submissions')
+          .delete()
+          .eq('anime_id', targetAnimeId)
+          .eq('ep_num', targetEpNum)
+          .ilike('username', rawTarget);
+        if (delByUnameErr) {
+          console.warn('dub_submissions delete by username fallback:', delByUnameErr);
+        }
+
+        const matchingLocalSubs = state.dubSubmissions.filter(s =>
+          Number(s.anime_id) === targetAnimeId &&
+          Number(s.ep_num) === targetEpNum &&
+          (s.role_type === 'actor' || s.file_type === 'actor') &&
+          (isTargetMatch(s.username) || isTargetMatch(s.nickname))
+        );
+        for (const sub of matchingLocalSubs) {
           if (sub.id !== undefined && sub.id !== null) {
-            await supabaseClient.from('dub_submissions').delete().match({ id: sub.id });
-          } else {
-            await supabaseClient.from('dub_submissions').delete().match({
-              anime_id: currentReportAnimeId,
-              ep_num: currentReportEpNum,
-              username: sub.username
-            });
+            await supabaseClient.from('dub_submissions').delete().eq('id', sub.id);
           }
         }
 
-        const matchedIds = new Set(matchingSubs.map(s => String(s.id)));
+        const matchedIds = new Set(matchingLocalSubs.map(s => String(s.id)));
         state.dubSubmissions = state.dubSubmissions.filter(s => {
-          if (Number(s.anime_id) !== currentReportAnimeId || Number(s.ep_num) !== currentReportEpNum) return true;
+          if (Number(s.anime_id) !== targetAnimeId || Number(s.ep_num) !== targetEpNum) return true;
           if (s.role_type !== 'actor' && s.file_type !== 'actor') return true;
           if (s.id !== undefined && s.id !== null && matchedIds.has(String(s.id))) return false;
-          return !(isSamePersonToken(s.username, targetToken) || isSamePersonToken(s.nickname, targetToken));
+          return !(isTargetMatch(s.username) || isTargetMatch(s.nickname));
         });
 
         renderReportsTabContent();
@@ -2849,7 +2958,7 @@
       }
     }
 
-    async function addActorToEpisodeCast() {
+    function openAddEpisodeActorModal() {
       const accessibleShows = getAccessibleReportShows();
       const show = accessibleShows.find(s => Number(s.anime_id) === currentReportAnimeId);
       if (!show || !canEditShowCast(show)) {
@@ -2858,37 +2967,89 @@
       }
       if (!currentReportEpNum) return;
 
-      const selectEl = document.getElementById('report-add-actor-select');
-      const selectedToken = selectEl ? String(selectEl.value || '').replace(/^@/, '').trim() : '';
-      if (!selectedToken) {
-        alert('Выберите актера для добавления.');
-        return;
-      }
-
-      const existingCast = state.episodeCasts.find(
+      const castRow = state.episodeCasts.find(
         c => Number(c.anime_id) === currentReportAnimeId && Number(c.ep_num) === currentReportEpNum
       );
-      const currentTokens = existingCast ? parseTokens(existingCast.actors) : parseTokens(show.actors);
+      const assignedActors = castRow ? parseTokens(castRow.actors) : parseTokens(show.actors);
 
-      if (currentTokens.some(tok => isSamePersonToken(tok, selectedToken))) {
-        showToast('Этот актер уже есть в серии');
+      const availableMembers = state.teamMembers.filter(m => {
+        const tok = (m.username || m.nickname || '').replace(/^@/, '').trim();
+        if (!tok) return false;
+        return !assignedActors.some(act => isSamePersonToken(act, tok));
+      });
+
+      const subtitle = document.getElementById('add-ep-actor-subtitle');
+      if (subtitle) {
+        subtitle.innerText = `Релиз «${show.title}» • Серия ${currentReportEpNum}`;
+      }
+
+      const selectEl = document.getElementById('add-ep-actor-select');
+      if (availableMembers.length === 0) {
+        selectEl.innerHTML = `<option value="">Все участники команды уже в этой серии</option>`;
+      } else {
+        selectEl.innerHTML = availableMembers.map(m => {
+          const val = (m.username || m.nickname).replace(/^@/, '').trim();
+          const unameTag = m.username ? `@${m.username.replace(/^@/, '')}` : 'без @username';
+          return `<option value="${escapeReportHtml(val)}">${escapeReportHtml(m.nickname)} (${escapeReportHtml(unameTag)})</option>`;
+        }).join('');
+      }
+
+      document.getElementById('modal-add-ep-actor').classList.remove('hidden');
+    }
+
+    async function saveAddedEpisodeActor() {
+      const accessibleShows = getAccessibleReportShows();
+      const show = accessibleShows.find(s => Number(s.anime_id) === currentReportAnimeId);
+      if (!show || !canEditShowCast(show)) {
+        alert('У вас нет прав на редактирование состава этой серии.');
+        return;
+      }
+      if (!currentReportEpNum) return;
+
+      const selectEl = document.getElementById('add-ep-actor-select');
+      const selectedToken = selectEl ? String(selectEl.value || '').replace(/^@/, '').trim() : '';
+      if (!selectedToken) {
+        alert('Выберите участника для добавления.');
         return;
       }
 
-      const updatedTokens = [...currentTokens, selectedToken];
-      const updatedActorsStr = updatedTokens.map(tok => `@${tok.replace(/^@/, '')}`).join(' ');
-      const subbersStr = existingCast ? (existingCast.subbers || '') : (show.subbers || '');
-
       try {
-        if (existingCast) {
-          const { error } = await supabaseClient
-            .from('episode_casts')
-            .update({ actors: updatedActorsStr })
-            .match({ anime_id: currentReportAnimeId, ep_num: currentReportEpNum });
-          if (error) throw error;
-          existingCast.actors = updatedActorsStr;
+        const { data: existingRow, error: fetchErr } = await supabaseClient
+          .from('episode_casts')
+          .select('*')
+          .eq('anime_id', currentReportAnimeId)
+          .eq('ep_num', currentReportEpNum)
+          .maybeSingle();
+        if (fetchErr) throw fetchErr;
+
+        const currentTokens = existingRow ? parseTokens(existingRow.actors) : parseTokens(show.actors);
+        if (currentTokens.some(tok => isSamePersonToken(tok, selectedToken))) {
+          closeModal('modal-add-ep-actor');
+          showToast('Этот участник уже есть в серии');
+          return;
+        }
+
+        const updatedTokens = [...currentTokens, selectedToken];
+        const updatedActorsStr = updatedTokens.map(tok => `@${tok.replace(/^@/, '')}`).join(' ');
+        const subbersStr = existingRow ? (existingRow.subbers || '') : (show.subbers || '');
+
+        if (existingRow) {
+          const updateQuery = existingRow.id !== undefined && existingRow.id !== null
+            ? supabaseClient.from('episode_casts').update({ actors: updatedActorsStr }).eq('id', existingRow.id)
+            : supabaseClient.from('episode_casts').update({ actors: updatedActorsStr }).match({ anime_id: currentReportAnimeId, ep_num: currentReportEpNum });
+          const { error: updErr } = await updateQuery;
+          if (updErr) throw updErr;
+
+          const localCast = state.episodeCasts.find(
+            c => Number(c.anime_id) === currentReportAnimeId && Number(c.ep_num) === currentReportEpNum
+          );
+          if (localCast) {
+            localCast.actors = updatedActorsStr;
+          } else {
+            state.episodeCasts.push({ ...existingRow, actors: updatedActorsStr });
+          }
         } else {
-          const { data: upserted, error } = await supabaseClient
+          const { data: upserted, error: upsErr } = await supabaseClient
             .from('episode_casts')
             .upsert({
               anime_id: currentReportAnimeId,
@@ -2897,7 +3058,8 @@
               subbers: subbersStr
             }, { onConflict: 'anime_id,ep_num' })
             .select();
-          if (error) throw error;
+          if (upsErr) throw upsErr;
+
           state.episodeCasts.push((upserted && upserted[0]) ? upserted[0] : {
             anime_id: currentReportAnimeId,
             ep_num: currentReportEpNum,
@@ -2906,51 +3068,114 @@
           });
         }
 
+        closeModal('modal-add-ep-actor');
         renderReportsTabContent();
         if (state.activeTab === 'calendar') renderCalendarWidget();
-        showToast('Актер добавлен в серию!');
+        showToast('Участник добавлен в серию!');
       } catch (err) {
-        alert('Ошибка при добавлении актера: ' + (err?.message || err));
+        alert('Ошибка при добавлении участника: ' + (err?.message || err));
       }
     }
 
-    async function deleteEpisodeFromReport() {
+    async function deleteEntireEpisodeFromReport(animeId, epNum) {
+      const targetAnimeId = Number(animeId || currentReportAnimeId);
+      const targetEpNum = Number(epNum || currentReportEpNum);
+      if (!targetAnimeId || !targetEpNum) return;
+
       const accessibleShows = getAccessibleReportShows();
-      const show = accessibleShows.find(s => Number(s.anime_id) === currentReportAnimeId);
+      const show = accessibleShows.find(s => Number(s.anime_id) === targetAnimeId)
+        || state.dubScheduleList.find(s => Number(s.anime_id) === targetAnimeId);
       if (!show || !canEditShowCast(show)) {
         alert('У вас нет прав на удаление серии из отчёта.');
         return;
       }
-      if (!currentReportEpNum) return;
 
-      if (!confirm(`Убрать ${currentReportEpNum}-ю серию релиза «${show.title}» из отчёта и должников? Будут удалены записи по сабам, дорожкам, касту и фиксам этой серии.`)) {
+      if (!confirm(`Удалить ${targetEpNum}-ю серию релиза «${show.title}» из отчёта? Будут удалены все записи по сдачам, касту и фиксам этой серии.`)) {
         return;
       }
 
-      const animeId = Number(currentReportAnimeId);
-      const epNum = Number(currentReportEpNum);
-
       try {
-        const [resCast, resSubs, resFixes] = await Promise.all([
-          supabaseClient.from('episode_casts').delete().match({ anime_id: animeId, ep_num: epNum }),
-          supabaseClient.from('dub_submissions').delete().match({ anime_id: animeId, ep_num: epNum }),
-          supabaseClient.from('dub_fixes').delete().match({ anime_id: animeId, ep_num: epNum })
+        const [resSubs, resCast, resFixes] = await Promise.all([
+          supabaseClient.from('dub_submissions').delete().match({ anime_id: targetAnimeId, ep_num: targetEpNum }),
+          supabaseClient.from('episode_casts').delete().match({ anime_id: targetAnimeId, ep_num: targetEpNum }),
+          supabaseClient.from('dub_fixes').delete().match({ anime_id: targetAnimeId, ep_num: targetEpNum })
         ]);
-        if (resCast.error) throw resCast.error;
         if (resSubs.error) throw resSubs.error;
+        if (resCast.error) throw resCast.error;
         if (resFixes.error) throw resFixes.error;
 
-        state.episodeCasts = state.episodeCasts.filter(c => !(Number(c.anime_id) === animeId && Number(c.ep_num) === epNum));
-        state.dubSubmissions = state.dubSubmissions.filter(s => !(Number(s.anime_id) === animeId && Number(s.ep_num) === epNum));
-        state.dubFixes = state.dubFixes.filter(fx => !(Number(fx.anime_id) === animeId && Number(fx.ep_num) === epNum));
+        state.dubSubmissions = state.dubSubmissions.filter(s => !(Number(s.anime_id) === targetAnimeId && Number(s.ep_num) === targetEpNum));
+        state.episodeCasts = state.episodeCasts.filter(c => !(Number(c.anime_id) === targetAnimeId && Number(c.ep_num) === targetEpNum));
+        state.dubFixes = state.dubFixes.filter(fx => !(Number(fx.anime_id) === targetAnimeId && Number(fx.ep_num) === targetEpNum));
 
         currentReportEpNum = 0;
-        populateReportEpisodeDropdown(animeId);
+        populateReportEpisodeDropdown(targetAnimeId);
         renderReportsTabContent();
         if (state.activeTab === 'calendar') renderCalendarWidget();
-        showToast(`Серия ${epNum} убрана из отчёта`);
+        showToast(`Серия ${targetEpNum} удалена из отчёта`);
       } catch (err) {
         alert('Ошибка удаления серии из отчёта: ' + (err?.message || err));
+      }
+    }
+
+    // ⚙️ SETTINGS TAB LOGIC (bot_settings: auto_ping_debtors)
+    function renderAutoPingSettingUI() {
+      const toggle = document.getElementById('settings-auto-ping-debtors');
+      const statusBox = document.getElementById('settings-auto-ping-status');
+      if (toggle) toggle.checked = Boolean(state.autoPingDebtors);
+      if (!statusBox) return;
+
+      if (state.autoPingDebtors) {
+        statusBox.className = 'text-xs px-3.5 py-2.5 rounded-xl border bg-emerald-500/10 text-emerald-300 border-emerald-500/30';
+        statusBox.innerText = '✅ Включено: бот тегает несдавших дабберов в теме каждые 4 часа (с 11:00 до 22:00)';
+      } else {
+        statusBox.className = 'text-xs px-3.5 py-2.5 rounded-xl border bg-slate-900/70 text-slate-300 border-white/[0.08]';
+        statusBox.innerText = '🔕 Выключено: бот не тегает дабберов в чате, только тихо ведёт отчёты';
+      }
+    }
+
+    async function initSettingsTab() {
+      if (!state.isAdmin) return;
+      updateSettingsTabVisibility();
+      const statusBox = document.getElementById('settings-auto-ping-status');
+      if (statusBox) {
+        statusBox.className = 'text-xs px-3.5 py-2.5 rounded-xl border bg-slate-900/70 text-slate-400 border-white/[0.08]';
+        statusBox.innerText = 'Загрузка настройки...';
+      }
+
+      try {
+        const { data, error } = await supabaseClient
+          .from('bot_settings')
+          .select('key, value')
+          .eq('key', 'auto_ping_debtors')
+          .maybeSingle();
+        if (error) throw error;
+        state.autoPingDebtors = String(data?.value || '').toLowerCase() === 'true';
+      } catch (err) {
+        console.warn('Failed to load bot_settings:', err);
+      }
+      renderAutoPingSettingUI();
+    }
+
+    async function toggleAutoPingDebtors(isChecked) {
+      if (!state.isAdmin) {
+        alert('У вас нет прав администратора.');
+        return;
+      }
+      const prevValue = state.autoPingDebtors;
+      state.autoPingDebtors = Boolean(isChecked);
+      renderAutoPingSettingUI();
+
+      try {
+        const { error } = await supabaseClient
+          .from('bot_settings')
+          .upsert({ key: 'auto_ping_debtors', value: isChecked ? 'true' : 'false' }, { onConflict: 'key' });
+        if (error) throw error;
+        showToast(isChecked ? 'Авто-напоминания включены' : 'Авто-напоминания выключены');
+      } catch (err) {
+        state.autoPingDebtors = prevValue;
+        renderAutoPingSettingUI();
+        alert('Ошибка сохранения настройки в bot_settings: ' + (err?.message || err));
       }
     }
 
