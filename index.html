@@ -228,13 +228,16 @@
           <p class="text-xs text-slate-400">Проверка сданных дорожек и субтитров по сериям</p>
         </div>
 
-        <div class="flex items-center gap-2">
-          <select id="report-select-anime" onchange="onReportAnimeChange()" class="bg-[#151a24] border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+        <div class="flex flex-wrap items-center gap-2">
+          <select id="report-select-anime" onchange="onReportAnimeChange()" class="bg-[#151a24] border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 max-w-full">
             <option value="">-- Выберите релиз --</option>
           </select>
-          <select id="report-select-ep" onchange="onReportEpChange()" class="bg-[#151a24] border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 w-24">
-            <option value="1">Серия 1</option>
+          <select id="report-select-ep" onchange="onReportEpChange()" class="bg-[#151a24] border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 min-w-[110px]">
+            <option value="">Нет серий</option>
           </select>
+          <button id="btn-delete-report-ep" onclick="deleteEpisodeFromReport()" class="hidden bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 rounded-xl px-3 py-2 text-xs font-medium transition whitespace-nowrap">
+            🗑 Убрать серию из отчёта
+          </button>
         </div>
       </div>
 
@@ -391,6 +394,11 @@
           <label class="text-xs font-semibold text-slate-300 mb-1 block">⏰ Напоминать за (минут) до серии</label>
           <input type="number" id="dub-notify-min" value="30" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500" />
         </div>
+
+        <label class="flex items-center space-x-3 cursor-pointer bg-[#0b0e14] p-3.5 rounded-2xl border border-white/[0.08] hover:border-indigo-500/40 transition">
+          <input type="checkbox" id="dub-ping-debtors" checked class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-[#0b0e14] border-white/20 shrink-0" />
+          <span class="text-xs text-slate-200 leading-snug">🔔 Авто-напоминания должникам в чате (пинать, кто не сдал дорогу)</span>
+        </label>
       </div>
 
       <div class="flex space-x-3 pt-2">
@@ -546,6 +554,10 @@
       </div>
 
       <div class="space-y-3">
+        <div>
+          <label class="text-xs font-semibold text-slate-300 mb-1 block">Номер серии</label>
+          <input type="number" id="manual-sub-ep" min="1" value="1" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500" />
+        </div>
         <div>
           <label class="text-xs font-semibold text-slate-300 mb-1 block">Тип материала</label>
           <select id="manual-sub-type" class="w-full bg-[#0b0e14] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
@@ -1735,7 +1747,7 @@
           const subSubmitted = epSubs.some(s => s.role_type === 'subs' || s.file_type === 'subs');
           const actorSubs = epSubs.filter(s => s.role_type === 'actor' || s.file_type === 'actor');
           const epCastRow = state.episodeCasts.find(c => Number(c.anime_id) === Number(ep.anime_id) && Number(c.ep_num) === Number(ep.episode_number));
-          const castActorsRaw = (epCastRow && parseTokens(epCastRow.actors).length > 0) ? epCastRow.actors : ep.actors;
+          const castActorsRaw = epCastRow ? epCastRow.actors : ep.actors;
 
           const assignedActors = parseTokens(castActorsRaw);
           const actorProgressHtml = assignedActors.map(act => {
@@ -1759,6 +1771,10 @@
           const subStatusText = `📝 Сабы: ${subSubmitted ? '✅' : '⏳'}`;
           const isCuratorForThis = isShowCurator(ep);
           const curatorText = ep.curator ? `<p class="text-[10px] text-amber-300/90 mt-1">👑 Куратор: @${String(ep.curator).replace(/^@/, '')}</p>` : '';
+          const pingDebtorsEnabled = ep.ping_debtors !== false;
+          const pingBadgeHtml = pingDebtorsEnabled
+            ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">🔔 Авто-пинок вкл.</span>`
+            : `<span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-white/[0.08]">🔕 Авто-пинок выкл.</span>`;
 
           return `
             <div class="bg-[#151a24] border border-white/[0.08] rounded-2xl p-3.5 flex space-x-3.5 shadow-md">
@@ -1782,9 +1798,12 @@
                     </div>
                   </div>
 
-                  <div class="mt-1.5 flex items-center space-x-1.5 text-[11px] text-indigo-300">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    <span>Время выхода: ${ep.time_str}</span>
+                  <div class="mt-1.5 flex flex-wrap items-center justify-between gap-1.5 text-[11px] text-indigo-300">
+                    <div class="flex items-center space-x-1.5">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      <span>Время выхода: ${ep.time_str}</span>
+                    </div>
+                    ${pingBadgeHtml}
                   </div>
                 </div>
 
@@ -1889,6 +1908,7 @@
       document.getElementById('dub-datetime').value = defaultDateTime;
       document.getElementById('dub-total-eps').value = (existingDub && existingDub.total_episodes) ? existingDub.total_episodes : (item.episodes || 12);
       document.getElementById('dub-notify-min').value = (existingDub && existingDub.notify_before_min) ? existingDub.notify_before_min : 30;
+      document.getElementById('dub-ping-debtors').checked = existingDub ? (existingDub.ping_debtors !== false) : true;
 
       populateDubCuratorControls(existingDub ? existingDub.curator : '');
 
@@ -1957,6 +1977,7 @@
         subbers: getCheckedValues('dub_team_subber'),
         sound_engineers: getCheckedValues('dub_team_sound'),
         notify_before_min: parseInt(document.getElementById('dub-notify-min').value) || 30,
+        ping_debtors: document.getElementById('dub-ping-debtors').checked,
         notify_target: 'group',
         last_notified_ep: existingDub ? (existingDub.last_notified_ep || 0) : 0
       };
@@ -2241,6 +2262,9 @@
 
       if (accessibleShows.length === 0) {
         selectAnime.innerHTML = `<option value="">-- Нет доступных релизов --</option>`;
+        document.getElementById('report-select-ep').innerHTML = `<option value="">Нет серий</option>`;
+        const deleteEpBtn = document.getElementById('btn-delete-report-ep');
+        if (deleteEpBtn) deleteEpBtn.classList.add('hidden');
         document.getElementById('reports-blocks-container').innerHTML = `<div class="text-center py-16 text-slate-500 col-span-full text-xs">Нет доступных релизов для отчёта. Добавьте тайтлы в график озвучки или назначьте куратора.</div>`;
         return;
       }
@@ -2274,6 +2298,77 @@
       }
     }
 
+    function getActiveReportEpisodes(animeId) {
+      const epSet = new Set();
+      state.episodeCasts
+        .filter(c => Number(c.anime_id) === Number(animeId) && Number(c.ep_num) > 0)
+        .forEach(c => epSet.add(Number(c.ep_num)));
+      state.dubSubmissions
+        .filter(s => Number(s.anime_id) === Number(animeId) && Number(s.ep_num) > 0)
+        .forEach(s => epSet.add(Number(s.ep_num)));
+      state.dubFixes
+        .filter(fx => Number(fx.anime_id) === Number(animeId) && Number(fx.ep_num) > 0)
+        .forEach(fx => epSet.add(Number(fx.ep_num)));
+      return Array.from(epSet).sort((a, b) => a - b);
+    }
+
+    function populateReportEpisodeDropdown(animeId) {
+      const selectEp = document.getElementById('report-select-ep');
+      const activeEps = getActiveReportEpisodes(animeId);
+
+      if (activeEps.length === 0) {
+        selectEp.innerHTML = `<option value="">Нет активных серий</option>`;
+        currentReportEpNum = 0;
+        return;
+      }
+
+      if (!activeEps.includes(Number(currentReportEpNum))) {
+        currentReportEpNum = activeEps[activeEps.length - 1];
+      }
+
+      selectEp.innerHTML = activeEps.map(ep =>
+        `<option value="${ep}" ${ep === currentReportEpNum ? 'selected' : ''}>Серия ${ep}</option>`
+      ).join('');
+      currentReportEpNum = Number(selectEp.value) || 0;
+    }
+
+    async function loadAnimeReportData(animeId) {
+      if (!animeId) return;
+      try {
+        const [castsRes, subsRes, fixesRes] = await Promise.all([
+          supabaseClient.from('episode_casts').select('*').match({ anime_id: Number(animeId) }),
+          supabaseClient.from('dub_submissions').select('*').match({ anime_id: Number(animeId) }),
+          supabaseClient.from('dub_fixes').select('*').match({ anime_id: Number(animeId) })
+        ]);
+
+        if (!castsRes.error && Array.isArray(castsRes.data)) {
+          state.episodeCasts = [
+            ...state.episodeCasts.filter(c => Number(c.anime_id) !== Number(animeId)),
+            ...castsRes.data
+          ];
+        }
+        if (!subsRes.error && Array.isArray(subsRes.data)) {
+          state.dubSubmissions = [
+            ...state.dubSubmissions.filter(s => Number(s.anime_id) !== Number(animeId)),
+            ...subsRes.data
+          ];
+        }
+        if (!fixesRes.error && Array.isArray(fixesRes.data)) {
+          state.dubFixes = [
+            ...state.dubFixes.filter(fx => Number(fx.anime_id) !== Number(animeId)),
+            ...fixesRes.data
+          ];
+        }
+
+        if (Number(currentReportAnimeId) === Number(animeId)) {
+          populateReportEpisodeDropdown(animeId);
+          renderReportsTabContent();
+        }
+      } catch (e) {
+        console.warn('Failed to load report data for anime:', e);
+      }
+    }
+
     function onReportAnimeChange() {
       const selectAnime = document.getElementById('report-select-anime');
       currentReportAnimeId = Number(selectAnime.value);
@@ -2281,25 +2376,18 @@
       const show = accessibleShows.find(s => Number(s.anime_id) === currentReportAnimeId);
       if (!show) return;
 
-      const startEp = show.start_ep || 1;
-      const totalEps = show.total_episodes || 12;
-
-      const selectEp = document.getElementById('report-select-ep');
-      let epHtml = '';
-      for (let ep = startEp; ep <= totalEps; ep++) {
-        epHtml += `<option value="${ep}" ${ep === currentReportEpNum ? 'selected' : ''}>Серия ${ep}</option>`;
-      }
-      selectEp.innerHTML = epHtml;
-      currentReportEpNum = Number(selectEp.value);
+      populateReportEpisodeDropdown(currentReportAnimeId);
       renderReportsTabContent();
-      loadEpisodeFixes(currentReportAnimeId, currentReportEpNum);
+      loadAnimeReportData(currentReportAnimeId);
     }
 
     function onReportEpChange() {
       const selectEp = document.getElementById('report-select-ep');
-      currentReportEpNum = Number(selectEp.value);
+      currentReportEpNum = Number(selectEp.value) || 0;
       renderReportsTabContent();
-      loadEpisodeFixes(currentReportAnimeId, currentReportEpNum);
+      if (currentReportEpNum > 0) {
+        loadEpisodeFixes(currentReportAnimeId, currentReportEpNum);
+      }
     }
 
     function escapeReportHtml(str) {
@@ -2326,27 +2414,79 @@
       }
     }
 
+    function resolveTeamMemberByToken(token) {
+      const clean = String(token || '').replace(/^@/, '').trim().toLowerCase();
+      if (!clean) return null;
+      return state.teamMembers.find(m =>
+        (m.username && m.username.replace(/^@/, '').trim().toLowerCase() === clean) ||
+        (m.nickname && m.nickname.trim().toLowerCase() === clean)
+      ) || null;
+    }
+
+    function isSamePersonToken(tokenA, tokenB) {
+      const cleanA = String(tokenA || '').replace(/^@/, '').trim().toLowerCase();
+      const cleanB = String(tokenB || '').replace(/^@/, '').trim().toLowerCase();
+      if (!cleanA || !cleanB) return false;
+      if (cleanA === cleanB) return true;
+      const memberA = resolveTeamMemberByToken(cleanA);
+      const memberB = resolveTeamMemberByToken(cleanB);
+      if (memberA && memberB && String(memberA.id) === String(memberB.id)) return true;
+      if (memberA) {
+        const u = String(memberA.username || '').replace(/^@/, '').trim().toLowerCase();
+        const n = String(memberA.nickname || '').trim().toLowerCase();
+        if (cleanB === u || cleanB === n) return true;
+      }
+      if (memberB) {
+        const u = String(memberB.username || '').replace(/^@/, '').trim().toLowerCase();
+        const n = String(memberB.nickname || '').trim().toLowerCase();
+        if (cleanA === u || cleanA === n) return true;
+      }
+      return false;
+    }
+
     function renderReportsTabContent() {
       const selectEp = document.getElementById('report-select-ep');
-      currentReportEpNum = Number(selectEp.value);
+      currentReportEpNum = Number(selectEp.value) || 0;
       const accessibleShows = getAccessibleReportShows();
       const show = accessibleShows.find(s => Number(s.anime_id) === currentReportAnimeId);
       const container = document.getElementById('reports-blocks-container');
+      const deleteEpBtn = document.getElementById('btn-delete-report-ep');
 
       if (!show) {
+        if (deleteEpBtn) deleteEpBtn.classList.add('hidden');
         container.innerHTML = '';
         return;
       }
 
       const canManageThisReport = canEditShowCast(show);
+
+      if (!currentReportEpNum) {
+        if (deleteEpBtn) deleteEpBtn.classList.add('hidden');
+        container.innerHTML = `
+          <div class="col-span-full bg-[#151a24] border border-white/[0.08] rounded-2xl p-6 text-center space-y-3">
+            <p class="text-slate-400 text-xs">По этому релизу пока нет активных серий в работе (из сабов, дорожек или фиксов).</p>
+            ${canManageThisReport ? `<button onclick="openManualSubModal()" class="inline-flex items-center gap-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl font-medium transition">+ Отметить сдачу вручную</button>` : ''}
+          </div>
+        `;
+        return;
+      }
+
+      if (deleteEpBtn) {
+        if (canManageThisReport) {
+          deleteEpBtn.classList.remove('hidden');
+        } else {
+          deleteEpBtn.classList.add('hidden');
+        }
+      }
+
       const epSubs = state.dubSubmissions.filter(s => Number(s.anime_id) === currentReportAnimeId && Number(s.ep_num) === currentReportEpNum);
       const subRecord = epSubs.find(s => s.role_type === 'subs' || s.file_type === 'subs');
       const actorSubs = epSubs.filter(s => s.role_type === 'actor' || s.file_type === 'actor');
 
       // Check episode_casts for (anime_id, ep_num)
       const castRow = state.episodeCasts.find(c => Number(c.anime_id) === currentReportAnimeId && Number(c.ep_num) === currentReportEpNum);
+      const hasEpisodeCast = Boolean(castRow);
       const castActorsTokens = castRow ? parseTokens(castRow.actors) : [];
-      const hasEpisodeCast = castActorsTokens.length > 0;
 
       const assignedActors = hasEpisodeCast ? castActorsTokens : parseTokens(show.actors);
       const assignedSubbers = (castRow && parseTokens(castRow.subbers).length > 0) ? parseTokens(castRow.subbers) : parseTokens(show.subbers);
@@ -2354,19 +2494,12 @@
       // Helper to find matching member and submission for an actor token
       const matchActorData = (actToken) => {
         const cleanAct = actToken.replace(/^@/, '').toLowerCase();
-        const member = state.teamMembers.find(m =>
-          (m.username && m.username.replace(/^@/, '').toLowerCase() === cleanAct) ||
-          (m.nickname && m.nickname.trim().toLowerCase() === cleanAct)
-        );
+        const member = resolveTeamMemberByToken(cleanAct);
         const nick = member ? member.nickname : cleanAct;
         const uname = member && member.username ? member.username.replace(/^@/, '').toLowerCase() : cleanAct;
         const matchedSub = actorSubs.find(s =>
-          String(s.username || '').toLowerCase() === cleanAct ||
-          String(s.nickname || '').toLowerCase() === cleanAct ||
-          (member && (
-            String(s.username || '').toLowerCase() === uname ||
-            String(s.nickname || '').toLowerCase() === String(member.nickname || '').toLowerCase()
-          ))
+          isSamePersonToken(s.username, cleanAct) ||
+          isSamePersonToken(s.nickname, cleanAct)
         );
         return { cleanAct, nick, uname, matchedSub };
       };
@@ -2378,11 +2511,11 @@
       if (subRecord) {
         submittedCount++;
         submittedHtml += `
-          <div class="flex items-center justify-between bg-[#0b0e14] px-3.5 py-2.5 rounded-xl border border-white/[0.08]">
-            <div class="text-xs text-slate-200">📝 Субтитры (@${subRecord.username})</div>
-            <div class="flex items-center space-x-2">
+          <div class="flex items-center justify-between gap-2 bg-[#0b0e14] px-3.5 py-2.5 rounded-xl border border-white/[0.08]">
+            <div class="text-xs text-slate-200 min-w-0 truncate">📝 Субтитры (@${escapeReportHtml(subRecord.username)})</div>
+            <div class="flex items-center space-x-2 shrink-0">
               <span class="text-[10px] text-emerald-400 font-medium">✅ Сдано</span>
-              ${canManageThisReport ? `<button onclick="deleteSubmission('${subRecord.id}')" class="text-rose-400 hover:text-rose-300 p-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}
+              ${canManageThisReport ? `<button onclick="deleteSubmission('${subRecord.id}')" title="Удалить отметку" class="text-rose-400 hover:text-rose-300 p-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}
             </div>
           </div>
         `;
@@ -2390,15 +2523,19 @@
 
       if (hasEpisodeCast || assignedActors.length > 0) {
         assignedActors.forEach(act => {
-          const { nick, uname, matchedSub } = matchActorData(act);
+          const { cleanAct, nick, uname, matchedSub } = matchActorData(act);
           if (matchedSub) {
             submittedCount++;
+            const encToken = encodeURIComponent(uname || cleanAct);
             submittedHtml += `
-              <div class="flex items-center justify-between bg-[#0b0e14] px-3.5 py-2.5 rounded-xl border border-white/[0.08]">
-                <div class="text-xs text-slate-200">🎭 ${nick} (@${uname}) <span class="text-[10px] text-slate-400 font-mono">(${matchedSub.file_name || 'file'})</span></div>
-                <div class="flex items-center space-x-2">
-                  <span class="text-[10px] text-emerald-400 font-medium">✅ Сдал дорожку</span>
-                  ${canManageThisReport ? `<button onclick="deleteSubmission('${matchedSub.id}')" class="text-rose-400 hover:text-rose-300 p-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}
+              <div class="flex items-center justify-between gap-2 bg-[#0b0e14] px-3.5 py-2.5 rounded-xl border border-white/[0.08]">
+                <div class="text-xs text-slate-200 min-w-0">🎭 ${escapeReportHtml(nick)} (@${escapeReportHtml(uname)}) <span class="text-[10px] text-slate-400 font-mono">(${escapeReportHtml(matchedSub.file_name || 'file')})</span></div>
+                <div class="flex items-center space-x-1.5 shrink-0">
+                  <span class="text-[10px] text-emerald-400 font-medium whitespace-nowrap">✅ Сдал дорожку</span>
+                  ${canManageThisReport ? `
+                    <button onclick="deleteSubmission('${matchedSub.id}')" title="Удалить только сдачу" class="text-rose-400 hover:text-rose-300 p-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+                    <button onclick="removeActorFromEpisode('${encToken}')" class="text-[10px] bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 px-2 py-1 rounded-lg font-medium transition whitespace-nowrap">❌ Убрать</button>
+                  ` : ''}
                 </div>
               </div>
             `;
@@ -2407,14 +2544,19 @@
       } else {
         actorSubs.forEach(sub => {
           submittedCount++;
-          const member = state.teamMembers.find(m => m.username && m.username.replace(/^@/, '').toLowerCase() === String(sub.username || '').toLowerCase());
-          const nick = member ? member.nickname : sub.nickname;
+          const member = resolveTeamMemberByToken(sub.username || sub.nickname);
+          const nick = member ? member.nickname : (sub.nickname || sub.username);
+          const uname = member && member.username ? member.username.replace(/^@/, '').toLowerCase() : String(sub.username || '').replace(/^@/, '').toLowerCase();
+          const encToken = encodeURIComponent(uname || nick);
           submittedHtml += `
-            <div class="flex items-center justify-between bg-[#0b0e14] px-3.5 py-2.5 rounded-xl border border-white/[0.08]">
-              <div class="text-xs text-slate-200">🎭 ${nick} (@${sub.username}) <span class="text-[10px] text-slate-400 font-mono">(${sub.file_name || 'file'})</span></div>
-              <div class="flex items-center space-x-2">
-                <span class="text-[10px] text-emerald-400 font-medium">✅ Сдал дорожку</span>
-                ${canManageThisReport ? `<button onclick="deleteSubmission('${sub.id}')" class="text-rose-400 hover:text-rose-300 p-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}
+            <div class="flex items-center justify-between gap-2 bg-[#0b0e14] px-3.5 py-2.5 rounded-xl border border-white/[0.08]">
+              <div class="text-xs text-slate-200 min-w-0">🎭 ${escapeReportHtml(nick)} (@${escapeReportHtml(uname)}) <span class="text-[10px] text-slate-400 font-mono">(${escapeReportHtml(sub.file_name || 'file')})</span></div>
+              <div class="flex items-center space-x-1.5 shrink-0">
+                <span class="text-[10px] text-emerald-400 font-medium whitespace-nowrap">✅ Сдал дорожку</span>
+                ${canManageThisReport ? `
+                  <button onclick="deleteSubmission('${sub.id}')" title="Удалить только сдачу" class="text-rose-400 hover:text-rose-300 p-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+                  <button onclick="removeActorFromEpisode('${encToken}')" class="text-[10px] bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 px-2 py-1 rounded-lg font-medium transition whitespace-nowrap">❌ Убрать</button>
+                ` : ''}
               </div>
             </div>
           `;
@@ -2431,23 +2573,27 @@
 
       if (!subRecord) {
         pendingCount++;
-        const subbersStr = assignedSubbers.length ? assignedSubbers.map(s => `@${s}`).join(', ') : 'сабберов';
+        const subbersStr = assignedSubbers.length ? assignedSubbers.map(s => `@${escapeReportHtml(s)}`).join(', ') : 'сабберов';
         pendingHtml += `
-          <div class="flex items-center justify-between bg-[#0b0e14] px-3.5 py-2.5 rounded-xl border border-white/[0.08]">
+          <div class="flex items-center justify-between gap-2 bg-[#0b0e14] px-3.5 py-2.5 rounded-xl border border-white/[0.08]">
             <div class="text-xs text-slate-300">📝 Субтитры (Ожидаются от ${subbersStr})</div>
-            <span class="text-[10px] text-amber-400 font-medium">⏳ Ожидание</span>
+            <span class="text-[10px] text-amber-400 font-medium shrink-0">⏳ Ожидание</span>
           </div>
         `;
       }
 
       assignedActors.forEach(act => {
-        const { nick, uname, matchedSub } = matchActorData(act);
+        const { cleanAct, nick, uname, matchedSub } = matchActorData(act);
         if (!matchedSub) {
           pendingCount++;
+          const encToken = encodeURIComponent(uname || cleanAct);
           pendingHtml += `
-            <div class="flex items-center justify-between bg-[#0b0e14] px-3.5 py-2.5 rounded-xl border border-white/[0.08]">
-              <div class="text-xs text-slate-300">🎭 ${nick} (@${uname})</div>
-              <span class="text-[10px] text-amber-400 font-medium">⏳ Не сдал</span>
+            <div class="flex items-center justify-between gap-2 bg-[#0b0e14] px-3.5 py-2.5 rounded-xl border border-white/[0.08]">
+              <div class="text-xs text-slate-300 min-w-0">🎭 ${escapeReportHtml(nick)} (@${escapeReportHtml(uname)})</div>
+              <div class="flex items-center space-x-2 shrink-0">
+                <span class="text-[10px] text-amber-400 font-medium whitespace-nowrap">⏳ Не сдал</span>
+                ${canManageThisReport ? `<button onclick="removeActorFromEpisode('${encToken}')" class="text-[10px] bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 px-2 py-1 rounded-lg font-medium transition whitespace-nowrap">❌ Убрать</button>` : ''}
+              </div>
             </div>
           `;
         }
@@ -2457,14 +2603,63 @@
         pendingHtml = `<div class="text-emerald-400 text-xs py-4 text-center font-medium">🎉 Все материалы на эту серию полностью сданы!</div>`;
       }
 
+      // Top episode cast block (always visible when castRow exists, and shows add-actor control for admins/curators)
+      const availableToAddMembers = state.teamMembers.filter(m => {
+        const tok = (m.username || m.nickname || '').replace(/^@/, '').trim();
+        if (!tok) return false;
+        return !assignedActors.some(act => isSamePersonToken(act, tok));
+      });
+
+      const addActorOptionsHtml = availableToAddMembers.map(m => {
+        const val = m.username ? m.username.replace(/^@/, '') : m.nickname;
+        return `<option value="${escapeReportHtml(val)}">${escapeReportHtml(m.nickname)} (@${escapeReportHtml(m.username || 'none')})</option>`;
+      }).join('');
+
+      const addActorControlHtml = canManageThisReport ? `
+        <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 pt-2 border-t border-white/[0.06]">
+          <select id="report-add-actor-select" class="flex-1 min-w-[160px] bg-[#0b0e14] border border-white/[0.08] rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            <option value="">-- Выбрать актера для добавления --</option>
+            ${addActorOptionsHtml}
+          </select>
+          <button onclick="addActorToEpisodeCast()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-xl text-xs font-medium transition whitespace-nowrap">
+            + Добавить актера в серию
+          </button>
+        </div>
+      ` : '';
+
+      const castChipsHtml = assignedActors.length > 0
+        ? assignedActors.map(act => {
+            const { cleanAct, nick, uname } = matchActorData(act);
+            const encToken = encodeURIComponent(uname || cleanAct);
+            return `
+              <span class="inline-flex items-center gap-1.5 bg-[#0b0e14] border border-white/[0.08] px-2.5 py-1 rounded-xl text-xs text-slate-200">
+                <span>🎭 ${escapeReportHtml(nick)} <span class="text-slate-400">(@${escapeReportHtml(uname)})</span></span>
+                ${canManageThisReport ? `<button onclick="removeActorFromEpisode('${encToken}')" title="Убрать актера из серии" class="text-rose-400 hover:text-rose-300 text-[11px] font-bold leading-none px-0.5">❌</button>` : ''}
+              </span>
+            `;
+          }).join('')
+        : `<span class="text-xs text-slate-500">Список актеров пуст</span>`;
+
       const castSourceBanner = hasEpisodeCast
-        ? `<div class="col-span-full flex flex-wrap items-center justify-between gap-2 bg-indigo-500/10 border border-indigo-500/30 rounded-2xl px-4 py-2.5">
-             <span class="text-xs font-semibold text-indigo-300">🎬 Состав серии задан при сдаче сабов</span>
-             ${show.curator ? `<span class="text-[11px] text-amber-300">👑 Куратор: @${String(show.curator).replace(/^@/, '')}</span>` : ''}
+        ? `<div id="reports-episode-cast-card" class="col-span-full bg-indigo-500/10 border border-indigo-500/30 rounded-2xl p-4 space-y-3">
+             <div class="flex flex-wrap items-center justify-between gap-2">
+               <span class="text-xs font-bold text-indigo-300">🎭 Участники этой серии (из тегов в сабах)</span>
+               ${show.curator ? `<span class="text-[11px] text-amber-300">👑 Куратор: @${escapeReportHtml(String(show.curator).replace(/^@/, ''))}</span>` : ''}
+             </div>
+             <div class="flex flex-wrap gap-2">
+               ${castChipsHtml}
+             </div>
+             ${addActorControlHtml}
            </div>`
-        : `<div class="col-span-full flex flex-wrap items-center justify-between gap-2 bg-[#151a24] border border-white/[0.08] rounded-2xl px-4 py-2.5">
-             <span class="text-xs font-medium text-slate-300">📋 Общий состав релиза</span>
-             ${show.curator ? `<span class="text-[11px] text-amber-300">👑 Куратор: @${String(show.curator).replace(/^@/, '')}</span>` : ''}
+        : `<div id="reports-episode-cast-card" class="col-span-full bg-[#151a24] border border-white/[0.08] rounded-2xl p-4 space-y-3">
+             <div class="flex flex-wrap items-center justify-between gap-2">
+               <span class="text-xs font-medium text-slate-300">📋 Общий состав релиза</span>
+               ${show.curator ? `<span class="text-[11px] text-amber-300">👑 Куратор: @${escapeReportHtml(String(show.curator).replace(/^@/, ''))}</span>` : ''}
+             </div>
+             <div class="flex flex-wrap gap-2">
+               ${castChipsHtml}
+             </div>
+             ${addActorControlHtml}
            </div>`;
 
       const epFixes = state.dubFixes
@@ -2553,6 +2748,212 @@
       `;
     }
 
+    async function removeActorFromEpisode(encodedToken) {
+      const accessibleShows = getAccessibleReportShows();
+      const show = accessibleShows.find(s => Number(s.anime_id) === currentReportAnimeId);
+      if (!show || !canEditShowCast(show)) {
+        alert('У вас нет прав на редактирование состава этой серии.');
+        return;
+      }
+      if (!currentReportEpNum) return;
+
+      const targetToken = decodeURIComponent(encodedToken).replace(/^@/, '').trim().toLowerCase();
+      const member = resolveTeamMemberByToken(targetToken);
+      const displayName = member ? `${member.nickname} (@${member.username || targetToken})` : `@${targetToken}`;
+
+      if (!confirm(`Убрать ${displayName} из ${currentReportEpNum}-й серии?`)) return;
+
+      const existingCast = state.episodeCasts.find(
+        c => Number(c.anime_id) === currentReportAnimeId && Number(c.ep_num) === currentReportEpNum
+      );
+
+      let currentTokens = existingCast
+        ? parseTokens(existingCast.actors)
+        : parseTokens(show.actors);
+
+      if (!existingCast && currentTokens.length === 0) {
+        state.dubSubmissions
+          .filter(s => Number(s.anime_id) === currentReportAnimeId && Number(s.ep_num) === currentReportEpNum && (s.role_type === 'actor' || s.file_type === 'actor'))
+          .forEach(s => {
+            const t = (s.username || s.nickname || '').replace(/^@/, '').trim();
+            if (t && !currentTokens.some(x => isSamePersonToken(x, t))) {
+              currentTokens.push(t);
+            }
+          });
+      }
+
+      const updatedTokens = currentTokens.filter(tok => !isSamePersonToken(tok, targetToken));
+      const updatedActorsStr = updatedTokens.map(tok => `@${tok.replace(/^@/, '')}`).join(' ');
+      const subbersStr = existingCast ? (existingCast.subbers || '') : (show.subbers || '');
+
+      const matchingSubs = state.dubSubmissions.filter(s =>
+        Number(s.anime_id) === currentReportAnimeId &&
+        Number(s.ep_num) === currentReportEpNum &&
+        (s.role_type === 'actor' || s.file_type === 'actor') &&
+        (isSamePersonToken(s.username, targetToken) || isSamePersonToken(s.nickname, targetToken))
+      );
+
+      try {
+        if (existingCast) {
+          const { error: castErr } = await supabaseClient
+            .from('episode_casts')
+            .update({ actors: updatedActorsStr })
+            .match({ anime_id: currentReportAnimeId, ep_num: currentReportEpNum });
+          if (castErr) throw castErr;
+          existingCast.actors = updatedActorsStr;
+        } else {
+          const { data: upserted, error: castErr } = await supabaseClient
+            .from('episode_casts')
+            .upsert({
+              anime_id: currentReportAnimeId,
+              ep_num: currentReportEpNum,
+              actors: updatedActorsStr,
+              subbers: subbersStr
+            }, { onConflict: 'anime_id,ep_num' })
+            .select();
+          if (castErr) throw castErr;
+          const savedRow = (upserted && upserted[0]) ? upserted[0] : {
+            anime_id: currentReportAnimeId,
+            ep_num: currentReportEpNum,
+            actors: updatedActorsStr,
+            subbers: subbersStr
+          };
+          state.episodeCasts.push(savedRow);
+        }
+
+        for (const sub of matchingSubs) {
+          if (sub.id !== undefined && sub.id !== null) {
+            await supabaseClient.from('dub_submissions').delete().match({ id: sub.id });
+          } else {
+            await supabaseClient.from('dub_submissions').delete().match({
+              anime_id: currentReportAnimeId,
+              ep_num: currentReportEpNum,
+              username: sub.username
+            });
+          }
+        }
+
+        const matchedIds = new Set(matchingSubs.map(s => String(s.id)));
+        state.dubSubmissions = state.dubSubmissions.filter(s => {
+          if (Number(s.anime_id) !== currentReportAnimeId || Number(s.ep_num) !== currentReportEpNum) return true;
+          if (s.role_type !== 'actor' && s.file_type !== 'actor') return true;
+          if (s.id !== undefined && s.id !== null && matchedIds.has(String(s.id))) return false;
+          return !(isSamePersonToken(s.username, targetToken) || isSamePersonToken(s.nickname, targetToken));
+        });
+
+        renderReportsTabContent();
+        if (state.activeTab === 'calendar') renderCalendarWidget();
+        showToast('Актер убран из серии');
+      } catch (err) {
+        alert('Ошибка при удалении актера из серии: ' + (err?.message || err));
+      }
+    }
+
+    async function addActorToEpisodeCast() {
+      const accessibleShows = getAccessibleReportShows();
+      const show = accessibleShows.find(s => Number(s.anime_id) === currentReportAnimeId);
+      if (!show || !canEditShowCast(show)) {
+        alert('У вас нет прав на редактирование состава этой серии.');
+        return;
+      }
+      if (!currentReportEpNum) return;
+
+      const selectEl = document.getElementById('report-add-actor-select');
+      const selectedToken = selectEl ? String(selectEl.value || '').replace(/^@/, '').trim() : '';
+      if (!selectedToken) {
+        alert('Выберите актера для добавления.');
+        return;
+      }
+
+      const existingCast = state.episodeCasts.find(
+        c => Number(c.anime_id) === currentReportAnimeId && Number(c.ep_num) === currentReportEpNum
+      );
+      const currentTokens = existingCast ? parseTokens(existingCast.actors) : parseTokens(show.actors);
+
+      if (currentTokens.some(tok => isSamePersonToken(tok, selectedToken))) {
+        showToast('Этот актер уже есть в серии');
+        return;
+      }
+
+      const updatedTokens = [...currentTokens, selectedToken];
+      const updatedActorsStr = updatedTokens.map(tok => `@${tok.replace(/^@/, '')}`).join(' ');
+      const subbersStr = existingCast ? (existingCast.subbers || '') : (show.subbers || '');
+
+      try {
+        if (existingCast) {
+          const { error } = await supabaseClient
+            .from('episode_casts')
+            .update({ actors: updatedActorsStr })
+            .match({ anime_id: currentReportAnimeId, ep_num: currentReportEpNum });
+          if (error) throw error;
+          existingCast.actors = updatedActorsStr;
+        } else {
+          const { data: upserted, error } = await supabaseClient
+            .from('episode_casts')
+            .upsert({
+              anime_id: currentReportAnimeId,
+              ep_num: currentReportEpNum,
+              actors: updatedActorsStr,
+              subbers: subbersStr
+            }, { onConflict: 'anime_id,ep_num' })
+            .select();
+          if (error) throw error;
+          state.episodeCasts.push((upserted && upserted[0]) ? upserted[0] : {
+            anime_id: currentReportAnimeId,
+            ep_num: currentReportEpNum,
+            actors: updatedActorsStr,
+            subbers: subbersStr
+          });
+        }
+
+        renderReportsTabContent();
+        if (state.activeTab === 'calendar') renderCalendarWidget();
+        showToast('Актер добавлен в серию!');
+      } catch (err) {
+        alert('Ошибка при добавлении актера: ' + (err?.message || err));
+      }
+    }
+
+    async function deleteEpisodeFromReport() {
+      const accessibleShows = getAccessibleReportShows();
+      const show = accessibleShows.find(s => Number(s.anime_id) === currentReportAnimeId);
+      if (!show || !canEditShowCast(show)) {
+        alert('У вас нет прав на удаление серии из отчёта.');
+        return;
+      }
+      if (!currentReportEpNum) return;
+
+      if (!confirm(`Убрать ${currentReportEpNum}-ю серию релиза «${show.title}» из отчёта и должников? Будут удалены записи по сабам, дорожкам, касту и фиксам этой серии.`)) {
+        return;
+      }
+
+      const animeId = Number(currentReportAnimeId);
+      const epNum = Number(currentReportEpNum);
+
+      try {
+        const [resCast, resSubs, resFixes] = await Promise.all([
+          supabaseClient.from('episode_casts').delete().match({ anime_id: animeId, ep_num: epNum }),
+          supabaseClient.from('dub_submissions').delete().match({ anime_id: animeId, ep_num: epNum }),
+          supabaseClient.from('dub_fixes').delete().match({ anime_id: animeId, ep_num: epNum })
+        ]);
+        if (resCast.error) throw resCast.error;
+        if (resSubs.error) throw resSubs.error;
+        if (resFixes.error) throw resFixes.error;
+
+        state.episodeCasts = state.episodeCasts.filter(c => !(Number(c.anime_id) === animeId && Number(c.ep_num) === epNum));
+        state.dubSubmissions = state.dubSubmissions.filter(s => !(Number(s.anime_id) === animeId && Number(s.ep_num) === epNum));
+        state.dubFixes = state.dubFixes.filter(fx => !(Number(fx.anime_id) === animeId && Number(fx.ep_num) === epNum));
+
+        currentReportEpNum = 0;
+        populateReportEpisodeDropdown(animeId);
+        renderReportsTabContent();
+        if (state.activeTab === 'calendar') renderCalendarWidget();
+        showToast(`Серия ${epNum} убрана из отчёта`);
+      } catch (err) {
+        alert('Ошибка удаления серии из отчёта: ' + (err?.message || err));
+      }
+    }
+
     async function markFixDone(animeId, epNum, encodedUsername) {
       const accessibleShows = getAccessibleReportShows();
       const show = accessibleShows.find(s => Number(s.anime_id) === Number(animeId));
@@ -2631,6 +3032,12 @@
     }
 
     function openManualSubModal() {
+      const accessibleShows = getAccessibleReportShows();
+      const show = accessibleShows.find(s => Number(s.anime_id) === currentReportAnimeId);
+      const defaultEp = currentReportEpNum > 0 ? currentReportEpNum : (show?.start_ep || 1);
+      const epInput = document.getElementById('manual-sub-ep');
+      if (epInput) epInput.value = defaultEp;
+
       const selectUser = document.getElementById('manual-sub-user');
       selectUser.innerHTML = state.teamMembers.map(m => `<option value="${m.username || m.nickname}">${m.nickname} (@${m.username || 'nouser'}) [${m.role}]</option>`).join('');
       document.getElementById('modal-manual-sub').classList.remove('hidden');
@@ -2644,6 +3051,8 @@
         return;
       }
 
+      const epInput = document.getElementById('manual-sub-ep');
+      const epNum = Math.max(1, parseInt(epInput?.value || currentReportEpNum || show.start_ep || 1, 10));
       const fileType = document.getElementById('manual-sub-type').value;
       const userToken = document.getElementById('manual-sub-user').value;
       const member = state.teamMembers.find(m => m.username === userToken || m.nickname === userToken);
@@ -2652,7 +3061,7 @@
 
       const payload = {
         anime_id: Number(currentReportAnimeId),
-        ep_num: Number(currentReportEpNum),
+        ep_num: epNum,
         role_type: fileType,
         file_type: fileType,
         nickname: nickname,
@@ -2667,6 +3076,8 @@
         const { data: subs } = await supabaseClient.from('dub_submissions').select('*');
         if (subs) state.dubSubmissions = subs;
 
+        currentReportEpNum = epNum;
+        populateReportEpisodeDropdown(currentReportAnimeId);
         closeModal('modal-manual-sub');
         renderReportsTabContent();
         showToast('Сдача отмечена вручную!');
